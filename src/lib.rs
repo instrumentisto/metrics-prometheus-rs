@@ -1,14 +1,11 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+pub mod failure;
+pub mod metric;
+pub mod recorder;
+pub mod storage;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+#[doc(inline)]
+pub use self::{metric::Metric, recorder::Recorder};
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+pub fn register() -> Result<Recorder, metrics::SetRecorderError> {
+    Recorder::new().register()
 }
