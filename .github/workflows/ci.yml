@@ -1,0 +1,173 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+    tags: ["v*"]
+  pull_request:
+    branches: ["main"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUST_BACKTRACE: 1
+
+jobs:
+
+  ##########################
+  # Linting and formatting #
+  ##########################
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: clippy
+
+      - run: make cargo.lint
+
+  rustfmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: nightly
+          components: rustfmt
+
+      - run: make cargo.fmt check=yes
+
+
+
+
+  ###########
+  # Testing #
+  ###########
+
+  msrv:
+    name: MSRV
+    strategy:
+      fail-fast: false
+      matrix:
+        msrv: ["1.65.0"]
+        os:
+          - ubuntu
+          - macOS
+          - windows
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.msrv }}
+      - run: rustup default ${{ matrix.msrv }}
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: nightly
+
+      - run: cargo +nightly update -Z minimal-versions
+
+      - run: make test.cargo
+
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain:
+          - stable
+          - beta
+          - nightly
+        os:
+          - ubuntu
+          - macOS
+          - windows
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: rust-src
+      - run: rustup default ${{ matrix.toolchain }}
+
+      - run: cargo install cargo-careful
+        if: ${{ matrix.toolchain == 'nightly' }}
+
+      - run: make test.cargo
+                  careful=${{ (matrix.toolchain == 'nightly' && 'yes')
+                           ||                                   'no' }}
+
+
+
+
+  #################
+  # Documentation #
+  #################
+
+  rustdoc:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: nightly
+
+      - run: make cargo.doc private=yes open=no
+
+
+
+
+  #############
+  # Releasing #
+  #############
+
+  publish:
+    name: publish (crates.io)
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    needs: ["release-github"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Publish `metrics-prometheus` crate
+        run: cargo publish -p metrics-prometheus
+        env:
+          CARGO_TOKEN: ${{ secrets.CRATESIO_TOKEN }}
+
+  release-github:
+    name: release (GitHub)
+    if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    needs: ["clippy", "msrv", "rustdoc", "rustfmt", "test"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Parse release version
+        id: release
+        run: echo "version=${GITHUB_REF#refs/tags/v}"
+             >> $GITHUB_OUTPUT
+      - name: Verify release version matches Cargo manifest
+        run: |
+          test "${{ steps.release.outputs.version }}" \
+            == "$(grep -m1 'version = "' Cargo.toml | cut -d'"' -f2)"
+
+      - name: Parse CHANGELOG link
+        id: changelog
+        run: echo "link=${{ github.server_url }}/${{ github.repository }}/blob/v${{ steps.release.outputs.version }}/CHANGELOG.md#$(sed -n '/^## \[${{ steps.release.outputs.version }}\]/{s/^## \[\(.*\)\][^0-9]*\([0-9].*\)/\1--\2/;s/[^0-9a-z-]*//g;p;}' CHANGELOG.md)"
+             >> $GITHUB_OUTPUT
+
+      - uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ steps.release.outputs.version }}
+          body: |
+            [API docs](https://docs.rs/synthez/${{ steps.release.outputs.version }})
+            [Changelog](${{ steps.changelog.outputs.link }})
+          prerelease: ${{ contains(steps.release.outputs.version, '-') }}
