@@ -155,10 +155,7 @@ pub struct Describable<Metric> {
 
 impl<M> Describable<M> {
     pub fn wrap(metric: M) -> Self {
-        Self {
-            description: Default::default(),
-            metric,
-        }
+        Self { description: Default::default(), metric }
     }
 
     pub fn only_description(desc: impl Into<String>) -> Self
@@ -172,10 +169,7 @@ impl<M> Describable<M> {
     }
 
     pub fn map<Into>(self, into: impl FnOnce(M) -> Into) -> Describable<Into> {
-        Describable {
-            description: self.description,
-            metric: into(self.metric),
-        }
+        Describable { description: self.description, metric: into(self.metric) }
     }
 }
 
@@ -286,7 +280,8 @@ impl Bundled for prometheus::HistogramVec {
     }
 }
 
-pub type PrometheusIntCounter = Either<prometheus::IntCounter, prometheus::IntCounterVec>;
+pub type PrometheusIntCounter =
+    Either<prometheus::IntCounter, prometheus::IntCounterVec>;
 
 impl TryFrom<&metrics::Key> for PrometheusIntCounter {
     type Error = prometheus::Error;
@@ -324,7 +319,8 @@ impl TryFrom<&metrics::Key> for PrometheusGauge {
     }
 }
 
-pub type PrometheusHistogram = Either<prometheus::Histogram, prometheus::HistogramVec>;
+pub type PrometheusHistogram =
+    Either<prometheus::Histogram, prometheus::HistogramVec>;
 
 impl TryFrom<&metrics::Key> for PrometheusHistogram {
     type Error = prometheus::Error;
@@ -377,8 +373,10 @@ pub mod bundle {
     pub trait MetricVec {
         type Metric: prometheus::core::Metric;
 
-        fn get_metric_with_label_values(&self, values: &[&str])
-            -> prometheus::Result<Self::Metric>;
+        fn get_metric_with_label_values(
+            &self,
+            values: &[&str],
+        ) -> prometheus::Result<Self::Metric>;
     }
 
     #[sealed]
@@ -389,7 +387,10 @@ pub mod bundle {
     {
         type Metric = M;
 
-        fn get_metric_with_label_values(&self, vals: &[&str]) -> prometheus::Result<M> {
+        fn get_metric_with_label_values(
+            &self,
+            vals: &[&str],
+        ) -> prometheus::Result<M> {
             self.get_metric_with_label_values(vals)
         }
     }
@@ -399,7 +400,10 @@ pub mod bundle {
         type Single: prometheus::core::Metric;
         type Vec: MetricVec<Metric = Self::Single>;
 
-        fn get_single_metric(&self, key: &metrics::Key) -> prometheus::Result<Self::Single>;
+        fn get_single_metric(
+            &self,
+            key: &metrics::Key,
+        ) -> prometheus::Result<Self::Single>;
     }
 
     #[sealed]
@@ -411,7 +415,10 @@ pub mod bundle {
         type Single = M;
         type Vec = prometheus::core::MetricVec<B>;
 
-        fn get_single_metric(&self, key: &metrics::Key) -> prometheus::Result<M> {
+        fn get_single_metric(
+            &self,
+            key: &metrics::Key,
+        ) -> prometheus::Result<M> {
             match self {
                 Self::Single(c) => Ok(c.clone()),
                 Self::Vec(v) => {

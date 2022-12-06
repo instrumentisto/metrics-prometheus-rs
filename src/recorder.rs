@@ -7,7 +7,8 @@ use crate::{
 
 #[derive(Clone)]
 pub struct Recorder<FailureStrategy = PanicInDebugNoOpInRelease> {
-    metrics: Arc<metrics_util::registry::Registry<metrics::Key, storage::Mutable>>,
+    metrics:
+        Arc<metrics_util::registry::Registry<metrics::Key, storage::Mutable>>,
     storage: storage::Mutable,
     failure_strategy: FailureStrategy,
 }
@@ -39,8 +40,10 @@ impl<S> Recorder<S> {
     pub fn register<M>(&self, metric: M) -> prometheus::Result<()>
     where
         M: metric::Bundled + prometheus::core::Collector,
-        <M as metric::Bundled>::Bundle: prometheus::core::Collector + Clone + 'static,
-        storage::Mutable: storage::GetCollection<<M as metric::Bundled>::Bundle>,
+        <M as metric::Bundled>::Bundle:
+            prometheus::core::Collector + Clone + 'static,
+        storage::Mutable:
+            storage::GetCollection<<M as metric::Bundled>::Bundle>,
     {
         self.storage.register_external(metric)
     }
@@ -48,11 +51,14 @@ impl<S> Recorder<S> {
     pub fn must_register<M>(&self, metric: M)
     where
         M: metric::Bundled + prometheus::core::Collector,
-        <M as metric::Bundled>::Bundle: prometheus::core::Collector + Clone + 'static,
-        storage::Mutable: storage::GetCollection<<M as metric::Bundled>::Bundle>,
+        <M as metric::Bundled>::Bundle:
+            prometheus::core::Collector + Clone + 'static,
+        storage::Mutable:
+            storage::GetCollection<<M as metric::Bundled>::Bundle>,
     {
-        self.register(metric)
-            .unwrap_or_else(|e| panic!("failed to register `prometheus` metric: {e}"))
+        self.register(metric).unwrap_or_else(|e| {
+            panic!("failed to register `prometheus` metric: {e}")
+        })
     }
 }
 
@@ -66,8 +72,10 @@ where
         _: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
-        self.storage
-            .describe::<prometheus::IntCounter>(name.as_str(), description.into_owned())
+        self.storage.describe::<prometheus::IntCounter>(
+            name.as_str(),
+            description.into_owned(),
+        )
     }
 
     fn describe_gauge(
@@ -76,8 +84,10 @@ where
         _: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
-        self.storage
-            .describe::<prometheus::Gauge>(name.as_str(), description.into_owned())
+        self.storage.describe::<prometheus::Gauge>(
+            name.as_str(),
+            description.into_owned(),
+        )
     }
 
     fn describe_histogram(
@@ -86,25 +96,30 @@ where
         _: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
-        self.storage
-            .describe::<prometheus::Histogram>(name.as_str(), description.into_owned())
+        self.storage.describe::<prometheus::Histogram>(
+            name.as_str(),
+            description.into_owned(),
+        )
     }
 
     fn register_counter(&self, key: &metrics::Key) -> metrics::Counter {
         self.metrics
             .get_or_create_counter(key, |counter| {
-                counter
-                    .as_ref()
-                    .map(|c| Arc::clone(&c).into())
-                    .or_else(|e| match self.failure_strategy.decide(e) {
+                counter.as_ref().map(|c| Arc::clone(&c).into()).or_else(|e| {
+                    match self.failure_strategy.decide(e) {
                         failure::Action::NoOp => Ok(metrics::Counter::noop()),
                         // PANIC: We cannot panic inside this closure, because
                         //        this may lead to poisoning `RwLock`s inside
                         //        `metrics_util::registry::Registry`.
                         failure::Action::Panic => Err(e.to_string()),
-                    })
+                    }
+                })
             })
-            .unwrap_or_else(|e| panic!("failed to register `prometheus::IntCounter` metric: {e}"))
+            .unwrap_or_else(|e| {
+                panic!(
+                    "failed to register `prometheus::IntCounter` metric: {e}"
+                )
+            })
     }
 
     fn register_gauge(&self, key: &metrics::Key) -> metrics::Gauge {
@@ -120,24 +135,27 @@ where
                     }
                 })
             })
-            .unwrap_or_else(|e| panic!("failed to register `prometheus::Gauge` metric: {e}"))
+            .unwrap_or_else(|e| {
+                panic!("failed to register `prometheus::Gauge` metric: {e}")
+            })
     }
 
     fn register_histogram(&self, key: &metrics::Key) -> metrics::Histogram {
         self.metrics
             .get_or_create_histogram(key, |histogram| {
-                histogram
-                    .as_ref()
-                    .map(|c| Arc::clone(&c).into())
-                    .or_else(|e| match self.failure_strategy.decide(e) {
+                histogram.as_ref().map(|c| Arc::clone(&c).into()).or_else(|e| {
+                    match self.failure_strategy.decide(e) {
                         failure::Action::NoOp => Ok(metrics::Histogram::noop()),
                         // PANIC: We cannot panic inside this closure, because
                         //        this may lead to poisoning `RwLock`s inside
                         //        `metrics_util::registry::Registry`.
                         failure::Action::Panic => Err(e.to_string()),
-                    })
+                    }
+                })
             })
-            .unwrap_or_else(|e| panic!("failed to register `prometheus::Histogram` metric: {e}"))
+            .unwrap_or_else(|e| {
+                panic!("failed to register `prometheus::Histogram` metric: {e}")
+            })
     }
 }
 
@@ -148,7 +166,10 @@ pub struct Builder<FailureStrategy = PanicInDebugNoOpInRelease> {
 }
 
 impl<S> Builder<S> {
-    pub fn with_registry<'r>(mut self, registry: impl Into<Cow<'r, prometheus::Registry>>) -> Self {
+    pub fn with_registry<'r>(
+        mut self,
+        registry: impl Into<Cow<'r, prometheus::Registry>>,
+    ) -> Self {
         self.storage.prometheus = registry.into().into_owned();
         self
     }
@@ -157,17 +178,16 @@ impl<S> Builder<S> {
     where
         F: failure::Strategy,
     {
-        Builder {
-            storage: self.storage,
-            failure_strategy: strategy,
-        }
+        Builder { storage: self.storage, failure_strategy: strategy }
     }
 
     pub fn with_metric<M>(self, metric: M) -> prometheus::Result<Self>
     where
         M: metric::Bundled + prometheus::core::Collector,
-        <M as metric::Bundled>::Bundle: prometheus::core::Collector + Clone + 'static,
-        storage::Mutable: storage::GetCollection<<M as metric::Bundled>::Bundle>,
+        <M as metric::Bundled>::Bundle:
+            prometheus::core::Collector + Clone + 'static,
+        storage::Mutable:
+            storage::GetCollection<<M as metric::Bundled>::Bundle>,
     {
         self.storage.register_external(metric)?;
         Ok(self)
@@ -176,23 +196,25 @@ impl<S> Builder<S> {
     pub fn with_must_metric<M>(self, metric: M) -> Self
     where
         M: metric::Bundled + prometheus::core::Collector,
-        <M as metric::Bundled>::Bundle: prometheus::core::Collector + Clone + 'static,
-        storage::Mutable: storage::GetCollection<<M as metric::Bundled>::Bundle>,
+        <M as metric::Bundled>::Bundle:
+            prometheus::core::Collector + Clone + 'static,
+        storage::Mutable:
+            storage::GetCollection<<M as metric::Bundled>::Bundle>,
     {
-        self.with_metric(metric)
-            .unwrap_or_else(|e| panic!("failed to register `prometheus` metric: {e}"))
+        self.with_metric(metric).unwrap_or_else(|e| {
+            panic!("failed to register `prometheus` metric: {e}")
+        })
     }
 
     pub fn register(self) -> Result<Recorder<S>, metrics::SetRecorderError>
     where
         S: failure::Strategy + Clone + 'static,
     {
-        let Self {
-            storage,
-            failure_strategy,
-        } = self;
+        let Self { storage, failure_strategy } = self;
         let rec = Recorder {
-            metrics: Arc::new(metrics_util::registry::Registry::new(storage.clone())),
+            metrics: Arc::new(metrics_util::registry::Registry::new(
+                storage.clone(),
+            )),
             storage,
             failure_strategy,
         };

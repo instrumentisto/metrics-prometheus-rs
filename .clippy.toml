@@ -1,0 +1,14 @@
+# Project configuration for Clippy Rust code linter.
+# See full lints list at:
+# https://rust-lang.github.io/rust-clippy/master/index.html
+
+standard-macro-braces = [
+    { name = "assert", brace = "(" },
+    { name = "assert_eq", brace = "(" },
+    { name = "assert_ne", brace = "(" },
+    { name = "format", brace = "(" },
+    { name = "matches", brace = "(" },
+    { name = "panic", brace = "(" },
+    { name = "vec", brace = "[" },
+    { name = "write", brace = "(" },
+]

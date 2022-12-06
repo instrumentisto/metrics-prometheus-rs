@@ -80,7 +80,10 @@ impl Mutable {
         }
     }
 
-    fn register<'k, M>(&self, key: &'k metrics::Key) -> prometheus::Result<Arc<Metric<M>>>
+    fn register<'k, M>(
+        &self,
+        key: &'k metrics::Key,
+    ) -> prometheus::Result<Arc<Metric<M>>>
     where
         M: metric::Bundled + prometheus::core::Metric + Clone,
         <M as metric::Bundled>::Bundle: metric::Bundle<Single = M>
@@ -120,8 +123,9 @@ impl Mutable {
                 // implementations using this `storage::Mutable` will be able to
                 // retry registration in `prometheus::Registry`.
                 // TODO: Re-register?
-                self.prometheus
-                    .register(Box::new(entry.clone().map(|_| bundle.clone())))?;
+                self.prometheus.register(Box::new(
+                    entry.clone().map(|_| bundle.clone()),
+                ))?;
                 entry.metric = Some(bundle.clone());
 
                 bundle
@@ -133,7 +137,8 @@ impl Mutable {
     pub fn register_external<M>(&self, metric: M) -> prometheus::Result<()>
     where
         M: metric::Bundled + prometheus::core::Collector,
-        <M as metric::Bundled>::Bundle: prometheus::core::Collector + Clone + 'static,
+        <M as metric::Bundled>::Bundle:
+            prometheus::core::Collector + Clone + 'static,
         Self: GetCollection<<M as metric::Bundled>::Bundle>,
     {
         let name = metric
