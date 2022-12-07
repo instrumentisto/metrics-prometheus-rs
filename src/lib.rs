@@ -1,4 +1,10 @@
 #![doc = include_str!("../README.md")]
+#![doc(
+    html_logo_url = "https://raw.githubusercontent.com/instrumentisto\
+                     /metrics-prometheus-rs/main/logo.png",
+    html_favicon_url = "https://raw.githubusercontent.com/instrumentisto\
+                        /metrics-prometheus-rs/main/logo.png"
+)]
 #![deny(
     macro_use_extern_crate,
     nonstandard_style,
