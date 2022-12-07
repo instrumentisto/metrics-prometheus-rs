@@ -137,8 +137,7 @@ jobs:
         with:
           toolchain: stable
 
-      - name: Publish `metrics-prometheus` crate
-        run: cargo publish -p metrics-prometheus
+      - run: cargo publish -p metrics-prometheus
         env:
           CARGO_TOKEN: ${{ secrets.CRATESIO_TOKEN }}
 

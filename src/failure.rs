@@ -1,18 +1,33 @@
+//! Definitions for dealing with a [`prometheus::Error`].
+
+#[doc(inline)]
 pub use self::strategy::Strategy;
 
+/// Possible actions on an encountered [`prometheus::Error`] inside
+/// [`metrics::Recorder`] methods.
 #[derive(Clone, Copy, Debug)]
 pub enum Action {
+    /// Return a no-op metric implementation (see [`metrics::Counter::noop()`]
+    /// for example).
     NoOp,
+
+    /// Panic with the encountered [`prometheus::Error`].
     Panic,
 }
 
+/// Strategies for dealing with a [`prometheus::Error`].
 pub mod strategy {
     use super::Action;
 
+    /// Strategy deciding which [`Action`] should be performed on an encountered
+    /// [`prometheus::Error`] inside [`metrics::Recorder`] methods.
     pub trait Strategy {
+        /// Inspects the encountered [`prometheus::Error`] and returns the
+        /// [`Action`] to be performed.
         fn decide(&self, res: &prometheus::Error) -> Action;
     }
 
+    /// [`Strategy`] returning always [`Action::NoOp`].
     #[derive(Clone, Copy, Debug, Default)]
     pub struct NoOp;
 
@@ -22,6 +37,7 @@ pub mod strategy {
         }
     }
 
+    /// [`Strategy`] returning always [`Action::Panic`].
     #[derive(Clone, Copy, Debug, Default)]
     pub struct Panic;
 
@@ -31,6 +47,8 @@ pub mod strategy {
         }
     }
 
+    /// [`Strategy`] returning an [`Action::Panic`] in debug mode, and
+    /// [`Action::NoOp`] in release mode.
     #[derive(Clone, Copy, Debug, Default)]
     pub struct PanicInDebugNoOpInRelease;
 
@@ -42,7 +60,7 @@ pub mod strategy {
             }
             #[cfg(not(debug_assertions))]
             {
-                Action::Panic
+                Action::NoOp
             }
         }
     }

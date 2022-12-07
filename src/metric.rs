@@ -1,3 +1,6 @@
+//! Machinery around [`prometheus`] metrics for making them usable via
+//! [`metrics`] crate.
+
 use std::{iter, sync::Arc};
 
 use arc_swap::ArcSwap;
@@ -6,16 +9,24 @@ use smallvec::SmallVec;
 
 use self::bundle::Either;
 
+#[doc(inline)]
 pub use self::bundle::Bundle;
 
+/// Wrapper allowing implementing [`metrics::CounterFn`], [`metrics::GaugeFn`]
+/// and [`metrics::HistogramFn`] for [`prometheus`] metrics.
 #[derive(Clone, Copy, Debug)]
 pub struct Metric<M>(M);
 
 impl<M> Metric<M> {
-    pub fn new(metric: M) -> Self {
+    /// Wraps the provided [`prometheus`] `metric`.
+    #[must_use]
+    pub const fn wrap(metric: M) -> Self {
         Self(metric)
     }
 
+    /// Unwraps this [`Metric`] returning its inner [`prometheus`] metric
+    #[allow(clippy::missing_const_for_fn)] // false positive: drop
+    #[must_use]
     pub fn into_inner(self) -> M {
         self.0
     }
@@ -73,6 +84,14 @@ impl metrics::HistogramFn for Metric<prometheus::Histogram> {
     }
 }
 
+/// Fallible [`Metric`] stored in [`metrics::Registry`].
+///
+/// We're obligated to store [`Fallible`] metrics inside [`metrics::Registry`],
+/// because panicking earlier, rather than inside directly called
+/// [`metrics::Recorder`] methods, will poison locks the [`metrics::Registry`]
+/// is built upon on.
+///
+/// [`metrics::Registry`]: metrics_util::registry::Registry
 #[derive(Debug)]
 pub struct Fallible<M>(pub Arc<prometheus::Result<Arc<Metric<M>>>>);
 
@@ -91,83 +110,115 @@ impl<M> From<prometheus::Result<Arc<Metric<M>>>> for Fallible<M> {
 }
 
 impl<M> Fallible<M> {
+    /// Mimics [`Result::as_ref()`] method for this [`Fallible`].
+    ///
+    /// # Errors
+    ///
+    /// If this [`Fallible`] contains a [`prometheus::Error`].
     pub fn as_ref(&self) -> Result<&Arc<Metric<M>>, &prometheus::Error> {
         (*self.0).as_ref()
     }
 }
 
+// Not really used, only implemented to satisfy
+// `metrics_util::registry::Storage` requirements for stored items.
 impl<M> metrics::CounterFn for Fallible<M>
 where
     Metric<M>: metrics::CounterFn,
 {
     fn increment(&self, val: u64) {
         if let Ok(m) = &*self.0 {
-            m.increment(val)
+            m.increment(val);
         }
     }
 
     fn absolute(&self, val: u64) {
         if let Ok(m) = &*self.0 {
-            m.absolute(val)
+            m.absolute(val);
         }
     }
 }
 
+// Not really used, only implemented to satisfy
+// `metrics_util::registry::Storage` requirements for stored items.
 impl<M> metrics::GaugeFn for Fallible<M>
 where
     Metric<M>: metrics::GaugeFn,
 {
     fn increment(&self, val: f64) {
         if let Ok(m) = &*self.0 {
-            m.increment(val)
+            m.increment(val);
         }
     }
 
     fn decrement(&self, val: f64) {
         if let Ok(m) = &*self.0 {
-            m.decrement(val)
+            m.decrement(val);
         }
     }
 
     fn set(&self, val: f64) {
         if let Ok(m) = &*self.0 {
-            m.set(val)
+            m.set(val);
         }
     }
 }
 
+// Not really used, only implemented to satisfy
+// `metrics_util::registry::Storage` requirements for stored items.
 impl<M> metrics::HistogramFn for Fallible<M>
 where
     Metric<M>: metrics::HistogramFn,
 {
     fn record(&self, val: f64) {
         if let Ok(m) = &*self.0 {
-            m.record(val)
+            m.record(val);
         }
     }
 }
 
+/// [`prometheus`] metric with an ability to substitute its [`help` description]
+/// after registration in a [`prometheus::Registry`].
+///
+/// [`help` description]: prometheus::proto::MetricFamily::get_help
 #[derive(Clone, Debug, Default)]
 pub struct Describable<Metric> {
+    /// Swappable [`help` description] of the [`prometheus`] metric.
+    ///
+    /// [`help` description]: prometheus::proto::MetricFamily::get_help
     pub(crate) description: Arc<ArcSwap<String>>,
+
+    /// [`prometheus`] metric itself.
     pub(crate) metric: Metric,
 }
 
 impl<M> Describable<M> {
+    /// Wraps the provided [`prometheus`] `metric` into a [`Describable`] one.
+    #[must_use]
     pub fn wrap(metric: M) -> Self {
-        Self { description: Default::default(), metric }
+        Self { description: Arc::default(), metric }
     }
 
-    pub fn only_description(desc: impl Into<String>) -> Self
+    /// Generates a [`Default`] [`prometheus`] metric with the provided
+    /// [`help` description].
+    ///
+    /// [`help` description]: prometheus::proto::MetricFamily::get_help
+    #[must_use]
+    pub fn only_description(help: impl Into<String>) -> Self
     where
         M: Default,
     {
         Self {
-            description: Arc::new(ArcSwap::new(Arc::new(desc.into()))),
+            description: Arc::new(ArcSwap::new(Arc::new(help.into()))),
             metric: M::default(),
         }
     }
 
+    /// Maps the wrapped [`prometheus`] metric `into` another one, preserving
+    /// the current overwritten [`help` description] (if any).
+    ///
+    /// [`help` description]: prometheus::proto::MetricFamily::get_help
+    #[must_use]
     pub fn map<Into>(self, into: impl FnOnce(M) -> Into) -> Describable<Into> {
         Describable { description: self.description, metric: into(self.metric) }
     }
@@ -199,7 +250,9 @@ where
     }
 }
 
+/// Custom conversion trait to convert between foreign types.
 trait To<T> {
+    /// Converts this reference into a `T` value.
     fn to(&self) -> T;
 }
 
@@ -219,10 +272,13 @@ impl To<prometheus::HistogramOpts> for metrics::Key {
     }
 }
 
+/// [`prometheus`] metric being [`Bundle`]d.
 #[sealed]
 pub trait Bundled {
+    /// Type of a [`Bundle`] bundling this [`prometheus`] metric.
     type Bundle: Bundle;
 
+    /// Wraps this [`prometheus`] metric into its [`Bundle`].
     fn into_bundle(self) -> Self::Bundle;
 }
 
@@ -280,6 +336,7 @@ impl Bundled for prometheus::HistogramVec {
     }
 }
 
+/// [`Bundle`] of [`prometheus::IntCounter`] metrics.
 pub type PrometheusIntCounter =
     Either<prometheus::IntCounter, prometheus::IntCounterVec>;
 
@@ -300,6 +357,7 @@ impl TryFrom<&metrics::Key> for PrometheusIntCounter {
     }
 }
 
+/// [`Bundle`] of [`prometheus::Gauge`] metrics.
 pub type PrometheusGauge = Either<prometheus::Gauge, prometheus::GaugeVec>;
 
 impl TryFrom<&metrics::Key> for PrometheusGauge {
@@ -319,6 +377,7 @@ impl TryFrom<&metrics::Key> for PrometheusGauge {
     }
 }
 
+/// [`Bundle`] of [`prometheus::Histogram`] metrics.
 pub type PrometheusHistogram =
     Either<prometheus::Histogram, prometheus::HistogramVec>;
 
@@ -339,13 +398,27 @@ impl TryFrom<&metrics::Key> for PrometheusHistogram {
     }
 }
 
+/// Definitions of [`Bundle`] machinery.
 pub mod bundle {
     use sealed::sealed;
     use smallvec::SmallVec;
 
+    /// Either a single [`prometheus::Metric`] or a [`prometheus::MetricVec`] of
+    /// them, forming a [`Bundle`].
+    ///
+    /// [`prometheus::Metric`]: prometheus::core::Metric
+    /// [`prometheus::MetricVec`]: prometheus::core::MetricVec
     #[derive(Clone, Copy, Debug)]
     pub enum Either<Single, Vec> {
+        /// Single [`prometheus::Metric`].
+        ///
+        /// [`prometheus::Metric`]: prometheus::core::Metric
         Single(Single),
+
+        /// [`prometheus::MetricVec`] of [`prometheus::Metric`]s.
+        ///
+        /// [`prometheus::Metric`]: prometheus::core::Metric
+        /// [`prometheus::MetricVec`]: prometheus::core::MetricVec
         Vec(Vec),
     }
 
@@ -369,10 +442,26 @@ pub mod bundle {
         }
     }
 
+    /// [`prometheus::MetricVec`] of [`prometheus::Metric`]s.
+    ///
+    /// [`prometheus::Metric`]: prometheus::core::Metric
+    /// [`prometheus::MetricVec`]: prometheus::core::MetricVec
     #[sealed]
     pub trait MetricVec {
+        /// Type of [`prometheus::Metric`]s forming this [`MetricVec`].
+        ///
+        /// [`prometheus::Metric`]: prometheus::core::Metric
         type Metric: prometheus::core::Metric;
 
+        /// Calls [`prometheus::MetricVec::get_metric_with_label_values()`][0]
+        /// method of this [`MetricVec`].
+        ///
+        /// # Errors
+        ///
+        /// If a [`prometheus::Metric`] cannot be identified or created for the
+        /// provided label `values`.
+        ///
+        /// [0]: prometheus::core::MetricVec::get_metric_with_label_values()
         fn get_metric_with_label_values(
             &self,
             values: &[&str],
@@ -395,11 +484,36 @@ pub mod bundle {
         }
     }
 
+    /// Bundle of a [`prometheus::Metric`]s family.
+    ///
+    /// [`Either`] a single [`prometheus::Metric`] or a
+    /// [`prometheus::MetricVec`] of them.
+    ///
+    /// [`prometheus::Metric`]: prometheus::core::Metric
+    /// [`prometheus::MetricVec`]: prometheus::core::MetricVec
     #[sealed]
     pub trait Bundle {
+        /// Type of a single [`prometheus::Metric`] that may be stored in this
+        /// [`Bundle`].
+        ///
+        /// [`prometheus::Metric`]: prometheus::core::Metric
         type Single: prometheus::core::Metric;
+
+        /// Type of a [`prometheus::MetricVec`] that may be stored in this
+        /// [`Bundle`].
+        ///
+        /// [`prometheus::MetricVec`]: prometheus::core::MetricVec
         type Vec: MetricVec<Metric = Self::Single>;
 
+        /// Returns a single [`prometheus::Metric`] of this [`Bundle`],
+        /// identified by the provided [`metrics::Key`].
+        ///
+        /// # Errors
+        ///
+        /// If the provided [`metrics::Key`] cannot identify any
+        /// [`prometheus::Metric`] in this [`Bundle`].
+        ///
+        /// [`prometheus::Metric`]: prometheus::core::Metric
         fn get_single_metric(
             &self,
             key: &metrics::Key,

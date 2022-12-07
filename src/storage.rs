@@ -1,3 +1,7 @@
+//! [`metrics::registry::Storage`] implementations.
+//!
+//! [`metrics::registry::Storage`]: metrics_util::registry::Storage
+
 use std::{
     collections::HashMap,
     sync::{Arc, RwLock},
@@ -7,22 +11,61 @@ use sealed::sealed;
 
 use crate::{metric, Metric};
 
+/// Thread-safe [`HashMap`] a [`Collection`] is built upon.
 pub type Map<K, V> = Arc<RwLock<HashMap<K, V>>>;
 
+/// Name identifying a [`metric::Bundle`] stored in a [`Mutable`] storage.
 pub type KeyName = String;
 
-type Collection<M> = Map<KeyName, metric::Describable<Option<M>>>;
+/// [`Collection`] of [`Describable`] [`metric::Bundle`]s, stored in a
+/// [`Mutable`] storage.
+///
+/// [`Describable`]: metric::Describable
+pub type Collection<M> = Map<KeyName, metric::Describable<Option<M>>>;
 
+/// Retrieving a [`Collection`] of `M`etrics from a [`Mutable`] storage.
 #[sealed]
 pub trait GetCollection<M> {
+    /// Returns a [`Collection`] of `M`etrics stored in a [`Mutable`] storage.
+    #[must_use]
     fn collection(&self) -> &Collection<M>;
 }
 
+/// [`metrics::registry::Storage`] backed by a [`prometheus::Registry`] and
+/// allowing to change a [`help` description] of the registered [`prometheus`]
+/// metrics in runtime.
+///
+/// This [`metrics::registry::Storage`] is capable of registering metrics in its
+/// [`prometheus::Registry`] on the fly. By default, the
+/// [`prometheus::default_registry()`] is used.
+///
+/// # Errors
+///
+/// This [`Mutable`] storage returns [`metric::Fallible`] in its
+/// [`metrics::registry::Storage`] interface, because it cannot panic, as is
+/// called inside [`metrics::Registry`] and, so, may poison its inner locks.
+/// That's why possible errors are passed through up to the
+/// [`metrics::Recorder`] using this [`Mutable`] storage, and should be resolved
+/// there.
+///
+/// [`metrics::Registry`]: metrics_util::registry::Registry
+/// [`metrics::registry::Storage`]: metrics_util::registry::Storage
+/// [`help` description]: prometheus::proto::MetricFamily::get_help
 #[derive(Clone, Debug)]
 pub struct Mutable {
+    /// [`prometheus::Registry`] backing this [`Mutable`] storage.
     pub(crate) prometheus: prometheus::Registry,
+
+    /// [`Collection`] of [`prometheus::IntCounter`] metrics registered in this
+    /// [`Mutable`] storage.
     counters: Collection<metric::PrometheusIntCounter>,
+
+    /// [`Collection`] of [`prometheus::Gauge`] metrics registered in this
+    /// [`Mutable`] storage.
     gauges: Collection<metric::PrometheusGauge>,
+
+    /// [`Collection`] of [`prometheus::Histogram`] metrics registered in this
+    /// [`Mutable`] storage.
     histograms: Collection<metric::PrometheusHistogram>,
 }
 
@@ -50,7 +93,7 @@ impl GetCollection<metric::PrometheusHistogram> for Mutable {
 impl Default for Mutable {
     fn default() -> Self {
         Self {
-            prometheus: prometheus::default_registry().to_owned(),
+            prometheus: prometheus::default_registry().clone(),
             counters: Collection::default(),
             gauges: Collection::default(),
             histograms: Collection::default(),
@@ -59,11 +102,31 @@ impl Default for Mutable {
 }
 
 impl Mutable {
+    /// Changes the [`help` description] of the [`prometheus`] `M`etric
+    /// identified by its `name`.
+    ///
+    /// Accepts only the following [`prometheus`] `M`etrics:
+    /// - [`prometheus::IntCounter`], [`prometheus::IntCounterVec`]
+    /// - [`prometheus::Gauge`], [`prometheus::GaugeVec`]
+    /// - [`prometheus::Histogram`], [`prometheus::HistogramVec`]
+    ///
+    /// Intended to be used in [`metrics::Recorder::describe_counter()`],
+    /// [`metrics::Recorder::describe_gauge()`] and
+    /// [`metrics::Recorder::describe_histogram()`] implementations.
+    ///
+    /// [`help` description]: prometheus::proto::MetricFamily::get_help
     pub fn describe<M>(&self, name: &str, description: String)
     where
         M: metric::Bundled,
         Self: GetCollection<<M as metric::Bundled>::Bundle>,
     {
+        // PANIC: `RwLock` usage is fully panic-safe here.
+        #![allow(
+            clippy::missing_panics_doc,
+            clippy::unwrap_in_result,
+            clippy::unwrap_used
+        )]
+
         if let Some(metric) = self.collection().read().unwrap().get(name) {
             metric.description.store(Arc::new(description));
         } else {
@@ -72,14 +135,28 @@ impl Mutable {
             if let Some(metric) = storage.get(name) {
                 metric.description.store(Arc::new(description));
             } else {
-                storage.insert(
+                drop(storage.insert(
                     name.into(),
                     metric::Describable::only_description(description),
-                );
+                ));
             }
         }
     }
 
+    /// Initializes a new [`prometheus`] `M`etric (or reuses the existing one)
+    /// in the underlying [`prometheus::Registry`], satisfying the labeling of
+    /// the provided [`metrics::Key`] according to
+    /// [`metrics::registry::Storage`] interface semantics, and returns it for
+    /// use in a [`metrics::Registry`].
+    ///
+    /// # Errors
+    ///
+    /// If the underlying [`prometheus::Registry`] fails to register the newly
+    /// initialized [`prometheus`] `M`etric according to the provided
+    /// [`metrics::Key`].
+    ///
+    /// [`metrics::Registry`]: metrics_util::registry::Registry
+    /// [`metrics::registry::Storage`]: metrics_util::registry::Storage
     fn register<'k, M>(
         &self,
         key: &'k metrics::Key,
@@ -93,11 +170,19 @@ impl Mutable {
             + 'static,
         Self: GetCollection<<M as metric::Bundled>::Bundle>,
     {
+        // PANIC: `RwLock` usage is panic-safe here (considering the
+        //        `prometheus::Registry::register()` does not).
+        #![allow(
+            clippy::missing_panics_doc,
+            clippy::unwrap_in_result,
+            clippy::unwrap_used
+        )]
+
         use metric::Bundle as _;
 
         let name = key.name();
 
-        let bundle_opt = self
+        let mut bundle_opt = self
             .collection()
             .read()
             .unwrap()
@@ -109,7 +194,7 @@ impl Mutable {
         } else {
             let mut storage = self.collection().write().unwrap();
 
-            let bundle_opt = storage.get(name).and_then(|m| m.metric.clone());
+            bundle_opt = storage.get(name).and_then(|m| m.metric.clone());
             if let Some(bundle) = bundle_opt {
                 bundle
             } else {
@@ -131,9 +216,24 @@ impl Mutable {
                 bundle
             }
         };
-        Ok(Arc::new(Metric::new(bundle.get_single_metric(key)?)))
+        Ok(Arc::new(Metric::wrap(bundle.get_single_metric(key)?)))
     }
 
+    /// Registers the provided [`prometheus`] `metric` in the underlying
+    /// [`prometheus::Registry`] in the way making it usable via this
+    /// [`metrics::registry::Storage`] (and, so, [`metrics`] crate interfaces).
+    ///
+    /// Accepts only the following [`prometheus`] metrics:
+    /// - [`prometheus::IntCounter`], [`prometheus::IntCounterVec`]
+    /// - [`prometheus::Gauge`], [`prometheus::GaugeVec`]
+    /// - [`prometheus::Histogram`], [`prometheus::HistogramVec`]
+    ///
+    /// # Errors
+    ///
+    /// If the underlying [`prometheus::Registry`] fails to register the
+    /// provided `metric`.
+    ///
+    /// [`metrics::registry::Storage`]: metrics_util::registry::Storage
     pub fn register_external<M>(&self, metric: M) -> prometheus::Result<()>
     where
         M: metric::Bundled + prometheus::core::Collector,
@@ -141,6 +241,14 @@ impl Mutable {
             prometheus::core::Collector + Clone + 'static,
         Self: GetCollection<<M as metric::Bundled>::Bundle>,
     {
+        // PANIC: `RwLock` usage is panic-safe here (considering the
+        //        `prometheus::Registry::register()` does not).
+        #![allow(
+            clippy::missing_panics_doc,
+            clippy::unwrap_in_result,
+            clippy::unwrap_used
+        )]
+
         let name = metric
             .desc()
             .first()
@@ -156,7 +264,7 @@ impl Mutable {
         // TODO: Re-register?
         self.prometheus
             .register(Box::new(entry.clone().map(Option::unwrap)))?;
-        let _ = storage.insert(name, entry);
+        drop(storage.insert(name, entry));
 
         Ok(())
     }
