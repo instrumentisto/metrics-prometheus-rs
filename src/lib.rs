@@ -1,3 +1,7 @@
+// These links overwrite the ones in `README.md`
+// to become proper intra-doc links in Rust docs.
+//! [`metrics`]: metrics
+//! [`prometheus`]: prometheus
 #![doc = include_str!("../README.md")]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/instrumentisto\
