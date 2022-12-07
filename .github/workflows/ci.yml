@@ -139,7 +139,7 @@ jobs:
 
       - run: cargo publish -p metrics-prometheus
         env:
-          CARGO_TOKEN: ${{ secrets.CRATESIO_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATESIO_TOKEN }}
 
   release-github:
     name: release (GitHub)

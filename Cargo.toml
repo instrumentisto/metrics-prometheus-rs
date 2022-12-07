@@ -21,3 +21,7 @@ metrics-util = { version = "0.14", features = ["registry"], default-features = f
 prometheus = { version = "0.13", default-features = false }
 sealed = "0.4"
 smallvec = "1.10"
+
+# Not realy used, for surviving MSRV check only.
+# TODO: Fix in `prometheus` crate.
+thiserror = "1.0.2"

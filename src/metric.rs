@@ -461,6 +461,7 @@ pub mod bundle {
         /// If a [`prometheus::Metric`] cannot be identified or created for the
         /// provided label `values`.
         ///
+        /// [`prometheus::Metric`]: prometheus::core::Metric
         /// [0]: prometheus::core::MetricVec::get_metric_with_label_values()
         fn get_metric_with_label_values(
             &self,

@@ -37,6 +37,7 @@ use crate::{
 /// [`failure::strategy`] module for other available [`failure::Strategy`]s, or
 /// provide your own one by implementing a [`failure::Strategy`] trait.
 ///
+/// [`HashMap`]: std::collections::HashMap
 /// [`metrics::Registry`]: metrics_util::registry::Registry
 /// [`read`-lock]: std::sync::RwLock::read()
 #[derive(Clone)]
