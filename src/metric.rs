@@ -400,8 +400,9 @@ impl TryFrom<&metrics::Key> for PrometheusHistogram {
 
 /// Definitions of [`Bundle`] machinery.
 pub mod bundle {
+    use std::collections::HashMap;
+
     use sealed::sealed;
-    use smallvec::SmallVec;
 
     /// Either a single [`prometheus::Metric`] or a [`prometheus::MetricVec`] of
     /// them, forming a [`Bundle`].
@@ -453,8 +454,8 @@ pub mod bundle {
         /// [`prometheus::Metric`]: prometheus::core::Metric
         type Metric: prometheus::core::Metric;
 
-        /// Calls [`prometheus::MetricVec::get_metric_with_label_values()`][0]
-        /// method of this [`MetricVec`].
+        /// Calls [`prometheus::MetricVec::get_metric_with()`][0] method of this
+        /// [`MetricVec`].
         ///
         /// # Errors
         ///
@@ -462,10 +463,10 @@ pub mod bundle {
         /// provided label `values`.
         ///
         /// [`prometheus::Metric`]: prometheus::core::Metric
-        /// [0]: prometheus::core::MetricVec::get_metric_with_label_values()
-        fn get_metric_with_label_values(
+        /// [0]: prometheus::core::MetricVec::get_metric_with()
+        fn get_metric_with(
             &self,
-            values: &[&str],
+            labels: &HashMap<&str, &str>,
         ) -> prometheus::Result<Self::Metric>;
     }
 
@@ -477,11 +478,11 @@ pub mod bundle {
     {
         type Metric = M;
 
-        fn get_metric_with_label_values(
+        fn get_metric_with(
             &self,
-            vals: &[&str],
+            labels: &HashMap<&str, &str>,
         ) -> prometheus::Result<M> {
-            self.get_metric_with_label_values(vals)
+            self.get_metric_with(labels)
         }
     }
 
@@ -535,13 +536,21 @@ pub mod bundle {
             key: &metrics::Key,
         ) -> prometheus::Result<M> {
             match self {
-                Self::Single(c) => Ok(c.clone()),
+                Self::Single(c) => {
+                    if key.labels().next().is_some() {
+                        return Err(
+                            prometheus::Error::InconsistentCardinality {
+                                expect: 0,
+                                got: key.labels().count(),
+                            },
+                        );
+                    }
+                    Ok(c.clone())
+                }
                 Self::Vec(v) => {
-                    let labels = key
-                        .labels()
-                        .map(metrics::Label::value)
-                        .collect::<SmallVec<[_; 10]>>();
-                    v.get_metric_with_label_values(&labels)
+                    let labels =
+                        key.labels().map(|l| (l.key(), l.value())).collect();
+                    v.get_metric_with(&labels)
                 }
             }
         }

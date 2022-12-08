@@ -118,6 +118,7 @@ impl Mutable {
     pub fn describe<M>(&self, name: &str, description: String)
     where
         M: metric::Bundled,
+        <M as metric::Bundled>::Bundle: Clone,
         Self: GetCollection<<M as metric::Bundled>::Bundle>,
     {
         // PANIC: `RwLock` usage is fully panic-safe here.
@@ -127,7 +128,10 @@ impl Mutable {
             clippy::unwrap_used
         )]
 
-        if let Some(metric) = self.collection().read().unwrap().get(name) {
+        // We do `.clone()` here intentionally to release `.read()` lock.
+        let metric_opt = self.collection().read().unwrap().get(name).cloned();
+
+        if let Some(metric) = metric_opt {
             metric.description.store(Arc::new(description));
         } else {
             let mut storage = self.collection().write().unwrap();

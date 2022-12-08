@@ -1,7 +1,28 @@
 // These links overwrite the ones in `README.md`
 // to become proper intra-doc links in Rust docs.
+//! [`arc-swap`]: arc_swap
+//! [`Describable`]: metric::Describable
+//! [`failure::strategy`]: failure::strategy
+//! [`failure::Strategy`]: failure::Strategy
 //! [`metrics`]: metrics
+//! [`metrics::Counter`]: metrics::Counter
+//! [`metrics::Counter::noop()`]: metrics::Counter::noop()
+//! [`metrics::Gauge`]: metrics::Gauge
+//! [`metrics::Histogram`]: metrics::Histogram
+//! [`metrics::Recorder`]: metrics::Recorder
+//! [`metrics::Unit`]: metrics::Unit
+//! [`PanicInDebugNoOpInRelease`]: failure::strategy::PanicInDebugNoOpInRelease
 //! [`prometheus`]: prometheus
+//! [`prometheus::Error`]: prometheus::Error
+//! [`prometheus::Gauge`]: prometheus::Gauge
+//! [`prometheus::GaugeVec`]: prometheus::GaugeVec
+//! [`prometheus::Histogram`]: prometheus::Histogram
+//! [`prometheus::HistogramVec`]: prometheus::HistogramVec
+//! [`prometheus::IntCounter`]: prometheus::IntCounter
+//! [`prometheus::IntCounterVec`]: prometheus::IntCounterVec
+//! [`prometheus::MetricVec`]: prometheus::core::MetricVec
+//! [`prometheus::Registry`]: prometheus::Registry
+//! [`Recorder`]: Recorder
 #![doc = include_str!("../README.md")]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/instrumentisto\
@@ -119,6 +140,8 @@ pub mod metric;
 pub mod recorder;
 pub mod storage;
 
+use std::borrow::Cow;
+
 // For surviving MSRV check only.
 // TODO: Fix in `prometheus` crate.
 use thiserror as _;
@@ -147,4 +170,24 @@ pub fn install() -> Result<Recorder, metrics::SetRecorderError> {
 #[allow(clippy::must_use_candidate)]
 pub fn must_install() -> Recorder {
     Recorder::builder().must_build_and_install()
+}
+
+/// Ad hoc polymorphism for accepting either a reference or an owned function
+/// argument.
+pub trait IntoCow<'a, T: ToOwned + ?Sized + 'a> {
+    /// Wraps this reference (or owned value) into a [`Cow`].
+    #[must_use]
+    fn into_cow(self) -> Cow<'a, T>;
+}
+
+impl<'a> IntoCow<'a, Self> for prometheus::Registry {
+    fn into_cow(self) -> Cow<'a, Self> {
+        Cow::Owned(self)
+    }
+}
+
+impl<'a> IntoCow<'a, prometheus::Registry> for &'a prometheus::Registry {
+    fn into_cow(self) -> Cow<'a, prometheus::Registry> {
+        Cow::Borrowed(self)
+    }
 }

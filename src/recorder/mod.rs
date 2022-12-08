@@ -2,11 +2,11 @@
 
 pub mod layer;
 
-use std::{borrow::Cow, fmt, sync::Arc};
+use std::{fmt, sync::Arc};
 
 use crate::{
     failure::{self, strategy::PanicInDebugNoOpInRelease},
-    metric, storage,
+    metric, storage, IntoCow,
 };
 
 pub use metrics_util::layers::Layer;
@@ -17,6 +17,87 @@ pub use metrics_util::layers::Layer;
 /// This [`Recorder`] is capable of registering metrics in its
 /// [`prometheus::Registry`] on the fly. By default, the
 /// [`prometheus::default_registry()`] is used.
+///
+/// # Example
+///
+/// ```rust
+/// let recorder = metrics_prometheus::must_install();
+///
+/// // Either use `metrics` crate interfaces.
+/// metrics::increment_counter!("count", "whose" => "mine", "kind" => "owned");
+/// metrics::increment_counter!("count", "whose" => "mine", "kind" => "ref");
+/// metrics::increment_counter!("count", "kind" => "owned", "whose" => "dummy");
+///
+/// // Or construct and provide `prometheus` metrics directly.
+/// recorder.register_metric(prometheus::Gauge::new("value", "help")?)?;
+///
+/// let report = prometheus::TextEncoder::new()
+///     .encode_to_string(&prometheus::default_registry().gather())?;
+/// assert_eq!(
+///     report.trim(),
+///     r#"
+/// ## HELP count count
+/// ## TYPE count counter
+/// count{kind="owned",whose="dummy"} 1
+/// count{kind="owned",whose="mine"} 1
+/// count{kind="ref",whose="mine"} 1
+/// ## HELP value help
+/// ## TYPE value gauge
+/// value 0
+///     "#
+///     .trim(),
+/// );
+///
+/// // Metrics can be described anytime after being registered in
+/// // `prometheus::Registry`.
+/// metrics::describe_counter!("count", "Example of counter.");
+/// metrics::describe_gauge!("value", "Example of gauge.");
+///
+/// let report = prometheus::TextEncoder::new()
+///     .encode_to_string(&recorder.registry().gather())?;
+/// assert_eq!(
+///     report.trim(),
+///     r#"
+/// ## HELP count Example of counter.
+/// ## TYPE count counter
+/// count{kind="owned",whose="dummy"} 1
+/// count{kind="owned",whose="mine"} 1
+/// count{kind="ref",whose="mine"} 1
+/// ## HELP value Example of gauge.
+/// ## TYPE value gauge
+/// value 0
+///     "#
+///     .trim(),
+/// );
+///
+/// // Description can be changed multiple times and anytime:
+/// metrics::describe_counter!("count", "Another description.");
+///
+/// // Even before a metric is registered in `prometheus::Registry`.
+/// metrics::describe_counter!("another", "Yet another counter.");
+/// metrics::increment_counter!("another");
+///
+/// let report = prometheus::TextEncoder::new()
+///     .encode_to_string(&recorder.registry().gather())?;
+/// assert_eq!(
+///     report.trim(),
+///     r#"
+/// ## HELP another Yet another counter.
+/// ## TYPE another counter
+/// another 1
+/// ## HELP count Another description.
+/// ## TYPE count counter
+/// count{kind="owned",whose="dummy"} 1
+/// count{kind="owned",whose="mine"} 1
+/// count{kind="ref",whose="mine"} 1
+/// ## HELP value Example of gauge.
+/// ## TYPE value gauge
+/// value 0
+///     "#
+///     .trim(),
+/// );
+/// # Ok::<_, prometheus::Error>(())
+/// ```
 ///
 /// # Performance
 ///
@@ -33,13 +114,26 @@ pub use metrics_util::layers::Layer;
 /// [`prometheus::Registry`] returning a [`prometheus::Error`] instead of a
 /// registering the metric. The returned [`prometheus::Error`] can be either
 /// turned into a panic, or just silently ignored, making this [`Recorder`] to
-/// return a no-op metric (see [`metrics::Counter::noop()`] for example).
+/// return a no-op metric instead (see [`metrics::Counter::noop()`] for
+/// example).
 ///
 /// The desired behavior can be specified with a [`failure::Strategy`]
 /// implementation of this [`Recorder`]. By default a
 /// [`PanicInDebugNoOpInRelease`] [`failure::Strategy`] is used. See
 /// [`failure::strategy`] module for other available [`failure::Strategy`]s, or
-/// provide your own one by implementing a [`failure::Strategy`] trait.
+/// provide your own one by implementing the [`failure::Strategy`] trait.
+///
+/// ```rust,should_panic
+/// use metrics_prometheus::failure::strategy;
+///
+/// metrics_prometheus::Recorder::builder()
+///     .with_failure_strategy(strategy::Panic)
+///     .must_build_and_install();
+///
+/// metrics::increment_counter!("count", "kind" => "owned");
+/// // This panics, as such labeling is not allowed by `prometheus` crate.
+/// metrics::increment_counter!("count", "whose" => "mine");
+/// ```
 ///
 /// [`HashMap`]: std::collections::HashMap
 /// [`metrics::Registry`]: metrics_util::registry::Registry
@@ -73,20 +167,19 @@ impl<S: fmt::Debug> fmt::Debug for Recorder<S> {
     }
 }
 
-impl<S> Recorder<S> {
+impl Recorder {
     /// Starts building a new [`Recorder`] on top of the
     /// [`prometheus::default_registry()`].
-    pub fn builder() -> Builder<S>
-    where
-        S: failure::Strategy + Default,
-    {
+    pub fn builder() -> Builder {
         Builder {
             storage: storage::Mutable::default(),
-            failure_strategy: S::default(),
+            failure_strategy: PanicInDebugNoOpInRelease,
             layers: layer::Stack::identity(),
         }
     }
+}
 
+impl<S> Recorder<S> {
     /// Return the underlying [`prometheus::Registry`] backing this
     /// [`Recorder`].
     ///
@@ -96,6 +189,21 @@ impl<S> Recorder<S> {
     /// [`prometheus::Registry`], cannot be used via this [`metrics::Recorder`]
     /// (and, so, [`metrics`] crate interfaces), and trying to use them will
     /// inevitably cause a [`prometheus::Error`] being emitted.
+    ///
+    /// ```rust,should_panic
+    /// use metrics_prometheus::failure::strategy;
+    ///
+    /// let recorder = metrics_prometheus::Recorder::builder()
+    ///     .with_failure_strategy(strategy::Panic)
+    ///     .must_build_and_install();
+    ///
+    /// let counter = prometheus::IntCounter::new("value", "help")?;
+    /// recorder.registry().register(Box::new(counter))?;
+    ///
+    /// // panics: Duplicate metrics collector registration attempted
+    /// metrics::increment_counter!("value");
+    /// # Ok::<_, prometheus::Error>(())
+    /// ```
     #[must_use]
     pub const fn registry(&self) -> &prometheus::Registry {
         &self.storage.prometheus
@@ -114,6 +222,63 @@ impl<S> Recorder<S> {
     ///
     /// If the underlying [`prometheus::Registry`] fails to register the
     /// provided `metric`.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let recorder = metrics_prometheus::must_install();
+    ///
+    /// let counter = prometheus::IntCounterVec::new(
+    ///     prometheus::opts!("value", "help"),
+    ///     &["whose", "kind"],
+    /// )?;
+    ///
+    /// recorder.register_metric(counter.clone())?;
+    ///
+    /// counter.with_label_values(&["mine", "owned"]).inc();
+    /// counter.with_label_values(&["foreign", "ref"]).inc_by(2);
+    /// counter.with_label_values(&["foreign", "owned"]).inc_by(3);
+    ///
+    /// let report = prometheus::TextEncoder::new()
+    ///     .encode_to_string(&prometheus::default_registry().gather())?;
+    /// assert_eq!(
+    ///     report.trim(),
+    ///     r#"
+    /// ## HELP value help
+    /// ## TYPE value counter
+    /// value{kind="owned",whose="foreign"} 3
+    /// value{kind="owned",whose="mine"} 1
+    /// value{kind="ref",whose="foreign"} 2
+    ///     "#
+    ///     .trim(),
+    /// );
+    ///
+    /// metrics::increment_counter!(
+    ///     "value", "whose" => "mine", "kind" => "owned",
+    /// );
+    /// metrics::increment_counter!(
+    ///     "value", "whose" => "mine", "kind" => "ref",
+    /// );
+    /// metrics::increment_counter!(
+    ///     "value", "kind" => "owned", "whose" => "foreign",
+    /// );
+    ///
+    /// let report = prometheus::TextEncoder::new()
+    ///     .encode_to_string(&prometheus::default_registry().gather())?;
+    /// assert_eq!(
+    ///     report.trim(),
+    ///     r#"
+    /// ## HELP value help
+    /// ## TYPE value counter
+    /// value{kind="owned",whose="foreign"} 4
+    /// value{kind="owned",whose="mine"} 2
+    /// value{kind="ref",whose="foreign"} 2
+    /// value{kind="ref",whose="mine"} 1
+    ///     "#
+    ///     .trim(),
+    /// );
+    /// # Ok::<_, prometheus::Error>(())
+    /// ```
     pub fn register_metric<M>(&self, metric: M) -> prometheus::Result<()>
     where
         M: metric::Bundled + prometheus::core::Collector,
@@ -138,6 +303,63 @@ impl<S> Recorder<S> {
     ///
     /// If the underlying [`prometheus::Registry`] fails to register the
     /// provided `metric`.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let recorder = metrics_prometheus::must_install();
+    ///
+    /// let gauge = prometheus::GaugeVec::new(
+    ///     prometheus::opts!("value", "help"),
+    ///     &["whose", "kind"],
+    /// )?;
+    ///
+    /// recorder.must_register_metric(gauge.clone());
+    ///
+    /// gauge.with_label_values(&["mine", "owned"]).inc();
+    /// gauge.with_label_values(&["foreign", "ref"]).set(2.0);
+    /// gauge.with_label_values(&["foreign", "owned"]).set(3.0);
+    ///
+    /// let report = prometheus::TextEncoder::new()
+    ///     .encode_to_string(&prometheus::default_registry().gather())?;
+    /// assert_eq!(
+    ///     report.trim(),
+    ///     r#"
+    /// ## HELP value help
+    /// ## TYPE value gauge
+    /// value{kind="owned",whose="foreign"} 3
+    /// value{kind="owned",whose="mine"} 1
+    /// value{kind="ref",whose="foreign"} 2
+    ///     "#
+    ///     .trim(),
+    /// );
+    ///
+    /// metrics::increment_gauge!(
+    ///     "value", 2.0, "whose" => "mine", "kind" => "owned",
+    /// );
+    /// metrics::decrement_gauge!(
+    ///     "value", 2.0, "whose" => "mine", "kind" => "ref",
+    /// );
+    /// metrics::increment_gauge!(
+    ///     "value", 2.0, "kind" => "owned", "whose" => "foreign",
+    /// );
+    ///
+    /// let report = prometheus::TextEncoder::new()
+    ///     .encode_to_string(&prometheus::default_registry().gather())?;
+    /// assert_eq!(
+    ///     report.trim(),
+    ///     r#"
+    /// ## HELP value help
+    /// ## TYPE value gauge
+    /// value{kind="owned",whose="foreign"} 5
+    /// value{kind="owned",whose="mine"} 3
+    /// value{kind="ref",whose="foreign"} 2
+    /// value{kind="ref",whose="mine"} -2
+    ///     "#
+    ///     .trim(),
+    /// );
+    /// # Ok::<_, prometheus::Error>(())
+    /// ```
     pub fn must_register_metric<M>(&self, metric: M)
     where
         M: metric::Bundled + prometheus::core::Collector,
@@ -252,7 +474,10 @@ where
 /// Builder for building a [`Recorder`].
 #[derive(Debug)]
 #[must_use]
-pub struct Builder<FailureStrategy, Layers = layer::Stack> {
+pub struct Builder<
+    FailureStrategy = PanicInDebugNoOpInRelease,
+    Layers = layer::Stack,
+> {
     /// [`storage::Mutable`] registering metrics in its
     /// [`prometheus::Registry`].
     storage: storage::Mutable,
@@ -283,11 +508,36 @@ impl<S, L> Builder<S, L> {
     /// [`metrics::Recorder`] (and, so, [`metrics`] crate interfaces), and
     /// trying to use them will inevitably cause a [`prometheus::Error`] being
     /// emitted.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let custom = prometheus::Registry::new_custom(Some("my".into()), None)?;
+    ///
+    /// metrics_prometheus::Recorder::builder()
+    ///     .with_registry(&custom)
+    ///     .must_build_and_install();
+    ///
+    /// metrics::increment_counter!("count");
+    ///
+    /// let report =
+    ///     prometheus::TextEncoder::new().encode_to_string(&custom.gather())?;
+    /// assert_eq!(
+    ///     report.trim(),
+    ///     r#"
+    /// ## HELP my_count count
+    /// ## TYPE my_count counter
+    /// my_count 1
+    ///     "#
+    ///     .trim(),
+    /// );
+    /// # Ok::<_, prometheus::Error>(())
+    /// ```
     pub fn with_registry<'r>(
         mut self,
-        registry: impl Into<Cow<'r, prometheus::Registry>>,
+        registry: impl IntoCow<'r, prometheus::Registry>,
     ) -> Self {
-        self.storage.prometheus = registry.into().into_owned();
+        self.storage.prometheus = registry.into_cow().into_owned();
         self
     }
 
@@ -300,11 +550,27 @@ impl<S, L> Builder<S, L> {
     /// [`prometheus::Registry`] returning a [`prometheus::Error`] instead of a
     /// registering the metric. The returned [`prometheus::Error`] can be either
     /// turned into a panic, or just silently ignored, making the [`Recorder`]
-    /// to return a no-op metric (see [`metrics::Counter::noop()`] for example).
+    /// to return a no-op metric instead (see [`metrics::Counter::noop()`] for
+    /// example).
     ///
     /// The default [`failure::Strategy`] is [`PanicInDebugNoOpInRelease`]. See
     /// [`failure::strategy`] module for other available [`failure::Strategy`]s,
-    /// or provide your own one by implementing a [`failure::Strategy`] trait.
+    /// or provide your own one by implementing the [`failure::Strategy`] trait.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use metrics_prometheus::failure::strategy;
+    ///
+    /// metrics_prometheus::Recorder::builder()
+    ///     .with_failure_strategy(strategy::NoOp)
+    ///     .must_build_and_install();
+    ///
+    /// metrics::increment_counter!("invalid.name");
+    ///
+    /// let stats = prometheus::default_registry().gather();
+    /// assert_eq!(stats.len(), 0);
+    /// ```
     #[allow(clippy::missing_const_for_fn)] // false positive: drop
     pub fn with_failure_strategy<F>(self, strategy: F) -> Builder<F, L>
     where
@@ -330,6 +596,45 @@ impl<S, L> Builder<S, L> {
     ///
     /// If the underlying [`prometheus::Registry`] fails to register the
     /// provided `metric`.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let gauge = prometheus::Gauge::new("value", "help")?;
+    ///
+    /// metrics_prometheus::Recorder::builder()
+    ///     .with_metric(gauge.clone())?
+    ///     .must_build_and_install();
+    ///
+    /// gauge.inc();
+    ///
+    /// let report = prometheus::TextEncoder::new()
+    ///     .encode_to_string(&prometheus::default_registry().gather())?;
+    /// assert_eq!(
+    ///     report.trim(),
+    ///     r#"
+    /// ## HELP value help
+    /// ## TYPE value gauge
+    /// value 1
+    ///     "#
+    ///     .trim(),
+    /// );
+    ///
+    /// metrics::increment_gauge!("value", 1.0);
+    ///
+    /// let report = prometheus::TextEncoder::new()
+    ///     .encode_to_string(&prometheus::default_registry().gather())?;
+    /// assert_eq!(
+    ///     report.trim(),
+    ///     r#"
+    /// ## HELP value help
+    /// ## TYPE value gauge
+    /// value 2
+    ///     "#
+    ///     .trim(),
+    /// );
+    /// # Ok::<_, prometheus::Error>(())
+    /// ```
     pub fn with_metric<M>(self, metric: M) -> prometheus::Result<Self>
     where
         M: metric::Bundled + prometheus::core::Collector,
@@ -355,6 +660,45 @@ impl<S, L> Builder<S, L> {
     ///
     /// If the underlying [`prometheus::Registry`] fails to register the
     /// provided `metric`.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let counter = prometheus::IntCounter::new("value", "help")?;
+    ///
+    /// metrics_prometheus::Recorder::builder()
+    ///     .with_must_metric(counter.clone())
+    ///     .must_build_and_install();
+    ///
+    /// counter.inc();
+    ///
+    /// let report = prometheus::TextEncoder::new()
+    ///     .encode_to_string(&prometheus::default_registry().gather())?;
+    /// assert_eq!(
+    ///     report.trim(),
+    ///     r#"
+    /// ## HELP value help
+    /// ## TYPE value counter
+    /// value 1
+    ///     "#
+    ///     .trim(),
+    /// );
+    ///
+    /// metrics::increment_counter!("value");
+    ///
+    /// let report = prometheus::TextEncoder::new()
+    ///     .encode_to_string(&prometheus::default_registry().gather())?;
+    /// assert_eq!(
+    ///     report.trim(),
+    ///     r#"
+    /// ## HELP value help
+    /// ## TYPE value counter
+    /// value 2
+    ///     "#
+    ///     .trim(),
+    /// );
+    /// # Ok::<_, prometheus::Error>(())
+    /// ```
     pub fn with_must_metric<M>(self, metric: M) -> Self
     where
         M: metric::Bundled + prometheus::core::Collector,
@@ -375,6 +719,61 @@ impl<S, L> Builder<S, L> {
     ///
     /// If the built [`Recorder`] fails to be installed as
     /// [`metrics::recorder()`].
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use metrics_prometheus::{failure::strategy, recorder};
+    /// use metrics_util::layers::FilterLayer;
+    ///
+    /// let custom = prometheus::Registry::new_custom(Some("my".into()), None)?;
+    ///
+    /// let res = metrics_prometheus::Recorder::builder()
+    ///     .with_registry(&custom)
+    ///     .with_metric(prometheus::IntCounter::new("count", "help")?)?
+    ///     .with_metric(prometheus::Gauge::new("value", "help")?)?
+    ///     .with_failure_strategy(strategy::Panic)
+    ///     .with_layer(FilterLayer::from_patterns(["ignored"]))
+    ///     .build_and_install();
+    /// assert!(res.is_ok(), "cannot install `Recorder`: {}", res.unwrap_err());
+    ///
+    /// metrics::increment_counter!("count");
+    /// metrics::increment_gauge!("value", 3.0);
+    /// metrics::histogram!("histo", 38.0);
+    /// metrics::histogram!("ignored_histo", 1.0);
+    ///
+    /// let report =
+    ///     prometheus::TextEncoder::new().encode_to_string(&custom.gather())?;
+    /// assert_eq!(
+    ///     report.trim(),
+    ///     r#"
+    /// ## HELP my_count help
+    /// ## TYPE my_count counter
+    /// my_count 1
+    /// ## HELP my_histo histo
+    /// ## TYPE my_histo histogram
+    /// my_histo_bucket{le="0.005"} 0
+    /// my_histo_bucket{le="0.01"} 0
+    /// my_histo_bucket{le="0.025"} 0
+    /// my_histo_bucket{le="0.05"} 0
+    /// my_histo_bucket{le="0.1"} 0
+    /// my_histo_bucket{le="0.25"} 0
+    /// my_histo_bucket{le="0.5"} 0
+    /// my_histo_bucket{le="1"} 0
+    /// my_histo_bucket{le="2.5"} 0
+    /// my_histo_bucket{le="5"} 0
+    /// my_histo_bucket{le="10"} 0
+    /// my_histo_bucket{le="+Inf"} 1
+    /// my_histo_sum 38
+    /// my_histo_count 1
+    /// ## HELP my_value help
+    /// ## TYPE my_value gauge
+    /// my_value 3
+    ///     "#
+    ///     .trim(),
+    /// );
+    /// # Ok::<_, prometheus::Error>(())
+    /// ```
     pub fn build_and_install(
         self,
     ) -> Result<Recorder<S>, metrics::SetRecorderError>
@@ -402,6 +801,60 @@ impl<S, L> Builder<S, L> {
     ///
     /// If the built [`Recorder`] fails to be installed as
     /// [`metrics::recorder()`].
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use metrics_prometheus::{failure::strategy, recorder};
+    /// use metrics_util::layers::FilterLayer;
+    ///
+    /// let custom = prometheus::Registry::new_custom(Some("my".into()), None)?;
+    ///
+    /// let recorder = metrics_prometheus::Recorder::builder()
+    ///     .with_registry(custom)
+    ///     .with_metric(prometheus::IntCounter::new("count", "help")?)?
+    ///     .with_metric(prometheus::Gauge::new("value", "help")?)?
+    ///     .with_failure_strategy(strategy::Panic)
+    ///     .with_layer(FilterLayer::from_patterns(["ignored"]))
+    ///     .must_build_and_install();
+    ///
+    /// metrics::increment_counter!("count");
+    /// metrics::increment_gauge!("value", 3.0);
+    /// metrics::histogram!("histo", 38.0);
+    /// metrics::histogram!("ignored_histo", 1.0);
+    ///
+    /// let report = prometheus::TextEncoder::new()
+    ///     .encode_to_string(&recorder.registry().gather())?;
+    /// assert_eq!(
+    ///     report.trim(),
+    ///     r#"
+    /// ## HELP my_count help
+    /// ## TYPE my_count counter
+    /// my_count 1
+    /// ## HELP my_histo histo
+    /// ## TYPE my_histo histogram
+    /// my_histo_bucket{le="0.005"} 0
+    /// my_histo_bucket{le="0.01"} 0
+    /// my_histo_bucket{le="0.025"} 0
+    /// my_histo_bucket{le="0.05"} 0
+    /// my_histo_bucket{le="0.1"} 0
+    /// my_histo_bucket{le="0.25"} 0
+    /// my_histo_bucket{le="0.5"} 0
+    /// my_histo_bucket{le="1"} 0
+    /// my_histo_bucket{le="2.5"} 0
+    /// my_histo_bucket{le="5"} 0
+    /// my_histo_bucket{le="10"} 0
+    /// my_histo_bucket{le="+Inf"} 1
+    /// my_histo_sum 38
+    /// my_histo_count 1
+    /// ## HELP my_value help
+    /// ## TYPE my_value gauge
+    /// my_value 3
+    ///     "#
+    ///     .trim(),
+    /// );
+    /// # Ok::<_, prometheus::Error>(())
+    /// ```
     pub fn must_build_and_install(self) -> Recorder<S>
     where
         S: failure::Strategy + Clone,
@@ -417,19 +870,47 @@ impl<S, L> Builder<S, L> {
     }
 }
 
-impl<S, L> Builder<S, layer::Stack<L>> {
+impl<S, H, T> Builder<S, layer::Stack<H, T>> {
     /// Adds the provided [`metrics::Layer`] to wrap the built [`Recorder`] upon
     /// its installation as [`metrics::recorder()`].
     ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use metrics_util::layers::FilterLayer;
+    ///
+    /// metrics_prometheus::Recorder::builder()
+    ///     .with_layer(FilterLayer::from_patterns(["ignored"]))
+    ///     .with_layer(FilterLayer::from_patterns(["skipped"]))
+    ///     .must_build_and_install();
+    ///
+    /// metrics::increment_counter!("ignored_counter");
+    /// metrics::increment_counter!("reported_counter");
+    /// metrics::increment_counter!("skipped_counter");
+    ///
+    /// let report = prometheus::TextEncoder::new()
+    ///     .encode_to_string(&prometheus::default_registry().gather())?;
+    /// assert_eq!(
+    ///     report.trim(),
+    ///     r#"
+    /// ## HELP reported_counter reported_counter
+    /// ## TYPE reported_counter counter
+    /// reported_counter 1
+    ///     "#
+    ///     .trim(),
+    /// );
+    /// # Ok::<_, prometheus::Error>(())
+    /// ```
+    ///
     /// [`metrics::Layer`]: Layer
     #[allow(clippy::missing_const_for_fn)] // false positive: drop
-    pub fn with_layer<N>(
+    pub fn with_layer<L>(
         self,
-        layer: N,
-    ) -> Builder<S, layer::Stack<N, layer::Stack<L>>>
+        layer: L,
+    ) -> Builder<S, layer::Stack<L, layer::Stack<H, T>>>
     where
-        N: Layer<<layer::Stack<L> as Layer<Recorder<S>>>::Output>,
-        layer::Stack<L>: Layer<Recorder<S>>,
+        L: Layer<<layer::Stack<H, T> as Layer<Recorder<S>>>::Output>,
+        layer::Stack<H, T>: Layer<Recorder<S>>,
     {
         Builder {
             storage: self.storage,
