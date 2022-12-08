@@ -1,11 +1,15 @@
 //! [`metrics::Recorder`] implementations.
 
+pub mod layer;
+
 use std::{borrow::Cow, fmt, sync::Arc};
 
 use crate::{
     failure::{self, strategy::PanicInDebugNoOpInRelease},
     metric, storage,
 };
+
+pub use metrics_util::layers::Layer;
 
 /// [`metrics::Recorder`] registering metrics in a [`prometheus::Registry`] and
 /// powered by a [`metrics::Registry`] built on top of a [`storage::Mutable`].
@@ -21,7 +25,7 @@ use crate::{
 /// [`metrics::Registry`]: for already registered metrics it's just a
 /// [`read`-lock] on a sharded [`HashMap`] plus [`Arc`] cloning.
 ///
-/// # Error handling
+/// # Errors
 ///
 /// [`prometheus::Registry`] has far more stricter semantics than the ones
 /// implied by a [`metrics::Recorder`]. That's why incorrect usage of
@@ -79,6 +83,7 @@ impl<S> Recorder<S> {
         Builder {
             storage: storage::Mutable::default(),
             failure_strategy: S::default(),
+            layers: layer::Stack::identity(),
         }
     }
 
@@ -109,7 +114,7 @@ impl<S> Recorder<S> {
     ///
     /// If the underlying [`prometheus::Registry`] fails to register the
     /// provided `metric`.
-    pub fn register<M>(&self, metric: M) -> prometheus::Result<()>
+    pub fn register_metric<M>(&self, metric: M) -> prometheus::Result<()>
     where
         M: metric::Bundled + prometheus::core::Collector,
         <M as metric::Bundled>::Bundle:
@@ -133,7 +138,7 @@ impl<S> Recorder<S> {
     ///
     /// If the underlying [`prometheus::Registry`] fails to register the
     /// provided `metric`.
-    pub fn must_register<M>(&self, metric: M)
+    pub fn must_register_metric<M>(&self, metric: M)
     where
         M: metric::Bundled + prometheus::core::Collector,
         <M as metric::Bundled>::Bundle:
@@ -141,7 +146,7 @@ impl<S> Recorder<S> {
         storage::Mutable:
             storage::GetCollection<<M as metric::Bundled>::Bundle>,
     {
-        self.register(metric).unwrap_or_else(|e| {
+        self.register_metric(metric).unwrap_or_else(|e| {
             panic!("failed to register `prometheus` metric: {e}")
         });
     }
@@ -247,7 +252,7 @@ where
 /// Builder for building a [`Recorder`].
 #[derive(Debug)]
 #[must_use]
-pub struct Builder<FailureStrategy = PanicInDebugNoOpInRelease> {
+pub struct Builder<FailureStrategy, Layers = layer::Stack> {
     /// [`storage::Mutable`] registering metrics in its
     /// [`prometheus::Registry`].
     storage: storage::Mutable,
@@ -256,9 +261,15 @@ pub struct Builder<FailureStrategy = PanicInDebugNoOpInRelease> {
     /// [`prometheus::Error`] is encountered inside its [`metrics::Recorder`]
     /// methods.
     failure_strategy: FailureStrategy,
+
+    /// [`metrics::Layer`]s to wrap the built [`Recorder`] with upon its
+    /// installation as [`metrics::recorder()`].
+    ///
+    /// [`metrics::Layer`]: Layer
+    layers: Layers,
 }
 
-impl<S> Builder<S> {
+impl<S, L> Builder<S, L> {
     /// Sets the provided [`prometheus::Registry`] to be used by the built
     /// [`Recorder`].
     ///
@@ -295,11 +306,15 @@ impl<S> Builder<S> {
     /// [`failure::strategy`] module for other available [`failure::Strategy`]s,
     /// or provide your own one by implementing a [`failure::Strategy`] trait.
     #[allow(clippy::missing_const_for_fn)] // false positive: drop
-    pub fn with_failure_strategy<F>(self, strategy: F) -> Builder<F>
+    pub fn with_failure_strategy<F>(self, strategy: F) -> Builder<F, L>
     where
         F: failure::Strategy,
     {
-        Builder { storage: self.storage, failure_strategy: strategy }
+        Builder {
+            storage: self.storage,
+            failure_strategy: strategy,
+            layers: self.layers,
+        }
     }
 
     /// Registers the provided [`prometheus`] `metric` in the underlying
@@ -353,18 +368,22 @@ impl<S> Builder<S> {
         })
     }
 
-    /// Builds a [`Recorder`] out of this [`Builder`] and registers it as
+    /// Builds a [`Recorder`] out of this [`Builder`] and installs it as
     /// [`metrics::recorder()`].
     ///
     /// # Errors
     ///
-    /// If the built [`Recorder`] fails to be registered as
+    /// If the built [`Recorder`] fails to be installed as
     /// [`metrics::recorder()`].
-    pub fn register(self) -> Result<Recorder<S>, metrics::SetRecorderError>
+    pub fn build_and_install(
+        self,
+    ) -> Result<Recorder<S>, metrics::SetRecorderError>
     where
-        S: failure::Strategy + Clone + 'static,
+        S: failure::Strategy + Clone,
+        L: Layer<Recorder<S>>,
+        <L as Layer<Recorder<S>>>::Output: metrics::Recorder + 'static,
     {
-        let Self { storage, failure_strategy } = self;
+        let Self { storage, failure_strategy, layers } = self;
         let rec = Recorder {
             metrics: Arc::new(metrics_util::registry::Registry::new(
                 storage.clone(),
@@ -372,26 +391,50 @@ impl<S> Builder<S> {
             storage,
             failure_strategy,
         };
-        metrics::set_boxed_recorder(Box::new(rec.clone()))?;
+        metrics::set_boxed_recorder(Box::new(layers.layer(rec.clone())))?;
         Ok(rec)
     }
 
-    /// Builds a [`Recorder`] out of this [`Builder`] and registers it as
+    /// Builds a [`Recorder`] out of this [`Builder`] and installs it as
     /// [`metrics::recorder()`].
     ///
     /// # Panics
     ///
-    /// If the built [`Recorder`] fails to be registered as
+    /// If the built [`Recorder`] fails to be installed as
     /// [`metrics::recorder()`].
-    pub fn must_register(self) -> Recorder<S>
+    pub fn must_build_and_install(self) -> Recorder<S>
     where
-        S: failure::Strategy + Clone + 'static,
+        S: failure::Strategy + Clone,
+        L: Layer<Recorder<S>>,
+        <L as Layer<Recorder<S>>>::Output: metrics::Recorder + 'static,
     {
-        self.register().unwrap_or_else(|e| {
+        self.build_and_install().unwrap_or_else(|e| {
             panic!(
-                "failed to register `metrics_prometheus::Recorder` as \
+                "failed to install `metrics_prometheus::Recorder` as \
                  `metrics::recorder()`: {e}",
             )
         })
+    }
+}
+
+impl<S, L> Builder<S, layer::Stack<L>> {
+    /// Adds the provided [`metrics::Layer`] to wrap the built [`Recorder`] upon
+    /// its installation as [`metrics::recorder()`].
+    ///
+    /// [`metrics::Layer`]: Layer
+    #[allow(clippy::missing_const_for_fn)] // false positive: drop
+    pub fn with_layer<N>(
+        self,
+        layer: N,
+    ) -> Builder<S, layer::Stack<N, layer::Stack<L>>>
+    where
+        N: Layer<<layer::Stack<L> as Layer<Recorder<S>>>::Output>,
+        layer::Stack<L>: Layer<Recorder<S>>,
+    {
+        Builder {
+            storage: self.storage,
+            failure_strategy: self.failure_strategy,
+            layers: self.layers.push(layer),
+        }
     }
 }

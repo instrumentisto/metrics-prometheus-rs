@@ -126,25 +126,25 @@ use thiserror as _;
 #[doc(inline)]
 pub use self::{metric::Metric, recorder::Recorder};
 
-/// Registers a default [`Recorder`] (backed by the
+/// Installs a default [`Recorder`] (backed by the
 /// [`prometheus::default_registry()`]) as [`metrics::recorder()`].
 ///
 /// # Errors
 ///
-/// If the [`Recorder`] fails to be registered as [`metrics::recorder()`].
-pub fn register() -> Result<Recorder, metrics::SetRecorderError> {
-    Recorder::builder().register()
+/// If the [`Recorder`] fails to be installed as [`metrics::recorder()`].
+pub fn install() -> Result<Recorder, metrics::SetRecorderError> {
+    Recorder::builder().build_and_install()
 }
 
-/// Registers a default [`Recorder`] (backed by the
+/// Installs a default [`Recorder`] (backed by the
 /// [`prometheus::default_registry()`]) as [`metrics::recorder()`].
 ///
 /// # Panics
 ///
-/// If the [`Recorder`] fails to be registered as [`metrics::recorder()`].
+/// If the [`Recorder`] fails to be installed as [`metrics::recorder()`].
 // We do intentionally omit `#[must_use]` here, as we don't want to force
 // library users using the returned `Recorder` directly.
 #[allow(clippy::must_use_candidate)]
-pub fn must_register() -> Recorder {
-    Recorder::builder().must_register()
+pub fn must_install() -> Recorder {
+    Recorder::builder().must_build_and_install()
 }
