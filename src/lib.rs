@@ -26,9 +26,11 @@
 #![doc = include_str!("../README.md")]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/instrumentisto\
-                     /metrics-prometheus-rs/main/logo.png",
+                     /metrics-prometheus-rs\
+                     /80bcffc2096f9ff213ec84833a9d8dd81a115cd5/logo.png",
     html_favicon_url = "https://raw.githubusercontent.com/instrumentisto\
-                        /metrics-prometheus-rs/main/logo.png"
+                        /metrics-prometheus-rs\
+                        /80bcffc2096f9ff213ec84833a9d8dd81a115cd5/logo.png"
 )]
 #![deny(
     macro_use_extern_crate,

@@ -1,4 +1,4 @@
-<img align="right" width="200" src="https://raw.githubusercontent.com/instrumentisto/metrics-prometheus-rs/main/logo.png">
+<img align="right" width="200" src="https://raw.githubusercontent.com/instrumentisto/metrics-prometheus-rs/80bcffc2096f9ff213ec84833a9d8dd81a115cd5/logo.png">
 
 [`metrics`] + [`prometheus`] = ❤️
 =================================
