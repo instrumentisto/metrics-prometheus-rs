@@ -2,15 +2,12 @@ use std::sync::Arc;
 
 use once_cell::sync::OnceCell;
 
-use crate::{
-    failure::{self, strategy::PanicInDebugNoOpInRelease},
-    storage,
-};
+use crate::failure::strategy::PanicInDebugNoOpInRelease;
 
 #[derive(Clone)]
 pub struct Recorder<FailureStrategy = PanicInDebugNoOpInRelease> {
     usual: super::Recorder<FailureStrategy>,
-    frozen: Arc<OnceCell<storage::Immutable>>,
+    frozen: Arc<OnceCell<super::Frozen<FailureStrategy>>>,
 }
 
 impl<S> Recorder<S> {
@@ -22,7 +19,8 @@ impl<S> Recorder<S> {
 
 impl<S> metrics::Recorder for Recorder<S>
 where
-    S: failure::Strategy,
+    super::Recorder<S>: metrics::Recorder,
+    super::Frozen<S>: metrics::Recorder,
 {
     fn describe_counter(
         &self,
@@ -30,7 +28,9 @@ where
         unit: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
-        if self.frozen.get().is_none() {
+        if let Some(frozen) = self.frozen.get() {
+            frozen.describe_counter(name, unit, description)
+        } else {
             self.usual.describe_counter(name, unit, description)
         }
     }
@@ -41,7 +41,9 @@ where
         unit: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
-        if self.frozen.get().is_none() {
+        if let Some(frozen) = self.frozen.get() {
+            frozen.describe_gauge(name, unit, description)
+        } else {
             self.usual.describe_gauge(name, unit, description)
         }
     }
@@ -52,32 +54,16 @@ where
         unit: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
-        if self.frozen.get().is_none() {
+        if let Some(frozen) = self.frozen.get() {
+            frozen.describe_histogram(name, unit, description)
+        } else {
             self.usual.describe_histogram(name, unit, description)
         }
     }
 
     fn register_counter(&self, key: &metrics::Key) -> metrics::Counter {
         if let Some(frozen) = self.frozen.get() {
-            frozen
-                .get_metric::<prometheus::IntCounter>(key)
-                .and_then(|res| {
-                    res.map_err(|e| {
-                        match self.usual.failure_strategy.decide(&*e) {
-                            failure::Action::NoOp => (),
-                            failure::Action::Panic => panic!(
-                                "failed to register `prometheus::IntCounter` \
-                                 metric: {}",
-                                *e,
-                            ),
-                        }
-                    })
-                    .ok()
-                })
-                .map_or_else(metrics::Counter::noop, |m| {
-                    // TODO: Eliminate this `Arc` allocation via `metrics` PR.
-                    metrics::Counter::from_arc(Arc::new(m))
-                })
+            frozen.register_counter(key)
         } else {
             self.usual.register_counter(key)
         }
@@ -85,25 +71,7 @@ where
 
     fn register_gauge(&self, key: &metrics::Key) -> metrics::Gauge {
         if let Some(frozen) = self.frozen.get() {
-            frozen
-                .get_metric::<prometheus::Gauge>(key)
-                .and_then(|res| {
-                    res.map_err(|e| {
-                        match self.usual.failure_strategy.decide(&*e) {
-                            failure::Action::NoOp => (),
-                            failure::Action::Panic => panic!(
-                                "failed to register `prometheus::Gauge` \
-                                 metric: {}",
-                                *e,
-                            ),
-                        }
-                    })
-                    .ok()
-                })
-                .map_or_else(metrics::Gauge::noop, |m| {
-                    // TODO: Eliminate this `Arc` allocation via `metrics` PR.
-                    metrics::Gauge::from_arc(Arc::new(m))
-                })
+            frozen.register_gauge(key)
         } else {
             self.usual.register_gauge(key)
         }
@@ -111,25 +79,7 @@ where
 
     fn register_histogram(&self, key: &metrics::Key) -> metrics::Histogram {
         if let Some(frozen) = self.frozen.get() {
-            frozen
-                .get_metric::<prometheus::Histogram>(key)
-                .and_then(|res| {
-                    res.map_err(|e| {
-                        match self.usual.failure_strategy.decide(&*e) {
-                            failure::Action::NoOp => (),
-                            failure::Action::Panic => panic!(
-                                "failed to register `prometheus::Histogram` \
-                                 metric: {}",
-                                *e,
-                            ),
-                        }
-                    })
-                    .ok()
-                })
-                .map_or_else(metrics::Histogram::noop, |m| {
-                    // TODO: Eliminate this `Arc` allocation via `metrics` PR.
-                    metrics::Histogram::from_arc(Arc::new(m))
-                })
+            frozen.register_histogram(key)
         } else {
             self.usual.register_histogram(key)
         }

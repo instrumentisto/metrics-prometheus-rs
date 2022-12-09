@@ -1,6 +1,7 @@
 //! [`metrics::Recorder`] implementations.
 
 pub mod freezable;
+pub mod frozen;
 pub mod layer;
 
 use std::{fmt, sync::Arc};
@@ -12,7 +13,7 @@ use crate::{
 
 pub use metrics_util::layers::Layer;
 
-pub use self::freezable::Recorder as Freezable;
+pub use self::{freezable::Recorder as Freezable, frozen::Recorder as Frozen};
 
 /// [`metrics::Recorder`] registering metrics in a [`prometheus::Registry`] and
 /// powered by a [`metrics::Registry`] built on top of a [`storage::Mutable`].

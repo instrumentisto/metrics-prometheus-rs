@@ -154,7 +154,9 @@ use thiserror as _;
 #[doc(inline)]
 pub use self::{
     metric::Metric,
-    recorder::{Freezable as FreezableRecorder, Recorder},
+    recorder::{
+        Freezable as FreezableRecorder, Frozen as FrozenRecorder, Recorder,
+    },
 };
 
 /// Tries to install a default [`Recorder`] (backed by the
