@@ -128,6 +128,7 @@ impl Mutable {
             clippy::unwrap_used
         )]
 
+        // TODO: Just drop the guard, you idiot.
         // We do `.clone()` here intentionally to release `.read()` lock.
         let metric_opt = self.collection().read().unwrap().get(name).cloned();
 
@@ -294,5 +295,24 @@ impl metrics_util::registry::Storage<metrics::Key> for Mutable {
 
     fn histogram(&self, key: &metrics::Key) -> Self::Histogram {
         self.register::<prometheus::Histogram>(key).into()
+    }
+}
+
+pub struct Immutable {
+    counters:
+        HashMap<KeyName, prometheus::Result<metric::PrometheusIntCounter>>,
+    //gauges: HashMap<KeyName, metric::PrometheusGauge>,
+    //histogram: HashMap<KeyName, metric::PrometheusHistogram>,
+}
+
+impl Immutable {
+    pub fn get_metric<M>(
+        &self,
+        key: &metrics::Key,
+    ) -> Result<&Metric<<M as metric::Bundled>::Bundle>, &prometheus::Error>
+    where
+        M: metric::Bundled,
+    {
+        todo!()
     }
 }
