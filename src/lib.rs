@@ -151,14 +151,14 @@ use thiserror as _;
 #[doc(inline)]
 pub use self::{metric::Metric, recorder::Recorder};
 
-/// Installs a default [`Recorder`] (backed by the
+/// Tries to install a default [`Recorder`] (backed by the
 /// [`prometheus::default_registry()`]) as [`metrics::recorder()`].
 ///
 /// # Errors
 ///
 /// If the [`Recorder`] fails to be installed as [`metrics::recorder()`].
-pub fn install() -> Result<Recorder, metrics::SetRecorderError> {
-    Recorder::builder().build_and_install()
+pub fn try_install() -> Result<Recorder, metrics::SetRecorderError> {
+    Recorder::builder().try_build_and_install()
 }
 
 /// Installs a default [`Recorder`] (backed by the
@@ -170,8 +170,8 @@ pub fn install() -> Result<Recorder, metrics::SetRecorderError> {
 // We do intentionally omit `#[must_use]` here, as we don't want to force
 // library users using the returned `Recorder` directly.
 #[allow(clippy::must_use_candidate)]
-pub fn must_install() -> Recorder {
-    Recorder::builder().must_build_and_install()
+pub fn install() -> Recorder {
+    Recorder::builder().build_and_install()
 }
 
 /// Ad hoc polymorphism for accepting either a reference or an owned function
