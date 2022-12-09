@@ -21,7 +21,7 @@ pub use metrics_util::layers::Layer;
 /// # Example
 ///
 /// ```rust
-/// let recorder = metrics_prometheus::must_install();
+/// let recorder = metrics_prometheus::install();
 ///
 /// // Either use `metrics` crate interfaces.
 /// metrics::increment_counter!("count", "whose" => "mine", "kind" => "owned");
@@ -29,7 +29,7 @@ pub use metrics_util::layers::Layer;
 /// metrics::increment_counter!("count", "kind" => "owned", "whose" => "dummy");
 ///
 /// // Or construct and provide `prometheus` metrics directly.
-/// recorder.register_metric(prometheus::Gauge::new("value", "help")?)?;
+/// recorder.try_register_metric(prometheus::Gauge::new("value", "help")?)?;
 ///
 /// let report = prometheus::TextEncoder::new()
 ///     .encode_to_string(&prometheus::default_registry().gather())?;
@@ -128,7 +128,7 @@ pub use metrics_util::layers::Layer;
 ///
 /// metrics_prometheus::Recorder::builder()
 ///     .with_failure_strategy(strategy::Panic)
-///     .must_build_and_install();
+///     .build_and_install();
 ///
 /// metrics::increment_counter!("count", "kind" => "owned");
 /// // This panics, as such labeling is not allowed by `prometheus` crate.
@@ -195,7 +195,7 @@ impl<S> Recorder<S> {
     ///
     /// let recorder = metrics_prometheus::Recorder::builder()
     ///     .with_failure_strategy(strategy::Panic)
-    ///     .must_build_and_install();
+    ///     .build_and_install();
     ///
     /// let counter = prometheus::IntCounter::new("value", "help")?;
     /// recorder.registry().register(Box::new(counter))?;
@@ -209,7 +209,7 @@ impl<S> Recorder<S> {
         &self.storage.prometheus
     }
 
-    /// Registers the provided [`prometheus`] `metric` in the underlying
+    /// Tries to register the provided [`prometheus`] `metric` in the underlying
     /// [`prometheus::Registry`] in the way making it usable via this
     /// [`Recorder`] (and, so, [`metrics`] crate interfaces).
     ///
@@ -226,14 +226,14 @@ impl<S> Recorder<S> {
     /// # Example
     ///
     /// ```rust
-    /// let recorder = metrics_prometheus::must_install();
+    /// let recorder = metrics_prometheus::install();
     ///
     /// let counter = prometheus::IntCounterVec::new(
     ///     prometheus::opts!("value", "help"),
     ///     &["whose", "kind"],
     /// )?;
     ///
-    /// recorder.register_metric(counter.clone())?;
+    /// recorder.try_register_metric(counter.clone())?;
     ///
     /// counter.with_label_values(&["mine", "owned"]).inc();
     /// counter.with_label_values(&["foreign", "ref"]).inc_by(2);
@@ -279,7 +279,7 @@ impl<S> Recorder<S> {
     /// );
     /// # Ok::<_, prometheus::Error>(())
     /// ```
-    pub fn register_metric<M>(&self, metric: M) -> prometheus::Result<()>
+    pub fn try_register_metric<M>(&self, metric: M) -> prometheus::Result<()>
     where
         M: metric::Bundled + prometheus::core::Collector,
         <M as metric::Bundled>::Bundle:
@@ -307,14 +307,14 @@ impl<S> Recorder<S> {
     /// # Example
     ///
     /// ```rust
-    /// let recorder = metrics_prometheus::must_install();
+    /// let recorder = metrics_prometheus::install();
     ///
     /// let gauge = prometheus::GaugeVec::new(
     ///     prometheus::opts!("value", "help"),
     ///     &["whose", "kind"],
     /// )?;
     ///
-    /// recorder.must_register_metric(gauge.clone());
+    /// recorder.register_metric(gauge.clone());
     ///
     /// gauge.with_label_values(&["mine", "owned"]).inc();
     /// gauge.with_label_values(&["foreign", "ref"]).set(2.0);
@@ -360,7 +360,7 @@ impl<S> Recorder<S> {
     /// );
     /// # Ok::<_, prometheus::Error>(())
     /// ```
-    pub fn must_register_metric<M>(&self, metric: M)
+    pub fn register_metric<M>(&self, metric: M)
     where
         M: metric::Bundled + prometheus::core::Collector,
         <M as metric::Bundled>::Bundle:
@@ -368,7 +368,7 @@ impl<S> Recorder<S> {
         storage::Mutable:
             storage::GetCollection<<M as metric::Bundled>::Bundle>,
     {
-        self.register_metric(metric).unwrap_or_else(|e| {
+        self.try_register_metric(metric).unwrap_or_else(|e| {
             panic!("failed to register `prometheus` metric: {e}")
         });
     }
@@ -516,7 +516,7 @@ impl<S, L> Builder<S, L> {
     ///
     /// metrics_prometheus::Recorder::builder()
     ///     .with_registry(&custom)
-    ///     .must_build_and_install();
+    ///     .build_and_install();
     ///
     /// metrics::increment_counter!("count");
     ///
@@ -564,7 +564,7 @@ impl<S, L> Builder<S, L> {
     ///
     /// metrics_prometheus::Recorder::builder()
     ///     .with_failure_strategy(strategy::NoOp)
-    ///     .must_build_and_install();
+    ///     .build_and_install();
     ///
     /// metrics::increment_counter!("invalid.name");
     ///
@@ -583,7 +583,7 @@ impl<S, L> Builder<S, L> {
         }
     }
 
-    /// Registers the provided [`prometheus`] `metric` in the underlying
+    /// Tries to register the provided [`prometheus`] `metric` in the underlying
     /// [`prometheus::Registry`] in the way making it usable via the created
     /// [`Recorder`] (and, so, [`metrics`] crate interfaces).
     ///
@@ -603,8 +603,8 @@ impl<S, L> Builder<S, L> {
     /// let gauge = prometheus::Gauge::new("value", "help")?;
     ///
     /// metrics_prometheus::Recorder::builder()
-    ///     .with_metric(gauge.clone())?
-    ///     .must_build_and_install();
+    ///     .try_with_metric(gauge.clone())?
+    ///     .build_and_install();
     ///
     /// gauge.inc();
     ///
@@ -635,7 +635,7 @@ impl<S, L> Builder<S, L> {
     /// );
     /// # Ok::<_, prometheus::Error>(())
     /// ```
-    pub fn with_metric<M>(self, metric: M) -> prometheus::Result<Self>
+    pub fn try_with_metric<M>(self, metric: M) -> prometheus::Result<Self>
     where
         M: metric::Bundled + prometheus::core::Collector,
         <M as metric::Bundled>::Bundle:
@@ -667,8 +667,8 @@ impl<S, L> Builder<S, L> {
     /// let counter = prometheus::IntCounter::new("value", "help")?;
     ///
     /// metrics_prometheus::Recorder::builder()
-    ///     .with_must_metric(counter.clone())
-    ///     .must_build_and_install();
+    ///     .with_metric(counter.clone())
+    ///     .build_and_install();
     ///
     /// counter.inc();
     ///
@@ -699,7 +699,7 @@ impl<S, L> Builder<S, L> {
     /// );
     /// # Ok::<_, prometheus::Error>(())
     /// ```
-    pub fn with_must_metric<M>(self, metric: M) -> Self
+    pub fn with_metric<M>(self, metric: M) -> Self
     where
         M: metric::Bundled + prometheus::core::Collector,
         <M as metric::Bundled>::Bundle:
@@ -707,12 +707,12 @@ impl<S, L> Builder<S, L> {
         storage::Mutable:
             storage::GetCollection<<M as metric::Bundled>::Bundle>,
     {
-        self.with_metric(metric).unwrap_or_else(|e| {
+        self.try_with_metric(metric).unwrap_or_else(|e| {
             panic!("failed to register `prometheus` metric: {e}")
         })
     }
 
-    /// Builds a [`Recorder`] out of this [`Builder`] and installs it as
+    /// Builds a [`Recorder`] out of this [`Builder`] and tries to install it as
     /// [`metrics::recorder()`].
     ///
     /// # Errors
@@ -730,11 +730,11 @@ impl<S, L> Builder<S, L> {
     ///
     /// let res = metrics_prometheus::Recorder::builder()
     ///     .with_registry(&custom)
-    ///     .with_metric(prometheus::IntCounter::new("count", "help")?)?
-    ///     .with_metric(prometheus::Gauge::new("value", "help")?)?
+    ///     .try_with_metric(prometheus::IntCounter::new("count", "help")?)?
+    ///     .try_with_metric(prometheus::Gauge::new("value", "help")?)?
     ///     .with_failure_strategy(strategy::Panic)
     ///     .with_layer(FilterLayer::from_patterns(["ignored"]))
-    ///     .build_and_install();
+    ///     .try_build_and_install();
     /// assert!(res.is_ok(), "cannot install `Recorder`: {}", res.unwrap_err());
     ///
     /// metrics::increment_counter!("count");
@@ -774,7 +774,7 @@ impl<S, L> Builder<S, L> {
     /// );
     /// # Ok::<_, prometheus::Error>(())
     /// ```
-    pub fn build_and_install(
+    pub fn try_build_and_install(
         self,
     ) -> Result<Recorder<S>, metrics::SetRecorderError>
     where
@@ -812,11 +812,11 @@ impl<S, L> Builder<S, L> {
     ///
     /// let recorder = metrics_prometheus::Recorder::builder()
     ///     .with_registry(custom)
-    ///     .with_metric(prometheus::IntCounter::new("count", "help")?)?
-    ///     .with_metric(prometheus::Gauge::new("value", "help")?)?
+    ///     .try_with_metric(prometheus::IntCounter::new("count", "help")?)?
+    ///     .try_with_metric(prometheus::Gauge::new("value", "help")?)?
     ///     .with_failure_strategy(strategy::Panic)
     ///     .with_layer(FilterLayer::from_patterns(["ignored"]))
-    ///     .must_build_and_install();
+    ///     .build_and_install();
     ///
     /// metrics::increment_counter!("count");
     /// metrics::increment_gauge!("value", 3.0);
@@ -855,13 +855,13 @@ impl<S, L> Builder<S, L> {
     /// );
     /// # Ok::<_, prometheus::Error>(())
     /// ```
-    pub fn must_build_and_install(self) -> Recorder<S>
+    pub fn build_and_install(self) -> Recorder<S>
     where
         S: failure::Strategy + Clone,
         L: Layer<Recorder<S>>,
         <L as Layer<Recorder<S>>>::Output: metrics::Recorder + 'static,
     {
-        self.build_and_install().unwrap_or_else(|e| {
+        self.try_build_and_install().unwrap_or_else(|e| {
             panic!(
                 "failed to install `metrics_prometheus::Recorder` as \
                  `metrics::recorder()`: {e}",
@@ -882,7 +882,7 @@ impl<S, H, T> Builder<S, layer::Stack<H, T>> {
     /// metrics_prometheus::Recorder::builder()
     ///     .with_layer(FilterLayer::from_patterns(["ignored"]))
     ///     .with_layer(FilterLayer::from_patterns(["skipped"]))
-    ///     .must_build_and_install();
+    ///     .build_and_install();
     ///
     /// metrics::increment_counter!("ignored_counter");
     /// metrics::increment_counter!("reported_counter");

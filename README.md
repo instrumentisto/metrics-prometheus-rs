@@ -47,7 +47,7 @@ To satisfy the [`metrics::Recorder`]'s requirement of allowing changing metrics 
 
 ```rust
 // By default `prometheus::default_registry()` is used.
-let recorder = metrics_prometheus::must_install();
+let recorder = metrics_prometheus::install();
 
 // Either use `metrics` crate interfaces.
 metrics::increment_counter!("count", "whose" => "mine", "kind" => "owned");
@@ -55,7 +55,7 @@ metrics::increment_counter!("count", "whose" => "mine", "kind" => "ref");
 metrics::increment_counter!("count", "kind" => "owned", "whose" => "dummy");
 
 // Or construct and provide `prometheus` metrics directly.
-recorder.register_metric(prometheus::Gauge::new("value", "help")?)?;
+recorder.register_metric(prometheus::Gauge::new("value", "help")?);
 
 let report = prometheus::TextEncoder::new()
     .encode_to_string(&prometheus::default_registry().gather())?;
@@ -132,7 +132,7 @@ Since [`prometheus`] crate validates the metrics format very strictly, not every
 
 - Metric names cannot be namespaced with dots (and should follow [Prometheus] format).
   ```rust,should_panic
-  metrics_prometheus::must_install();
+  metrics_prometheus::install();
 
   // panics: 'queries.count' is not a valid metric name
   metrics::increment_counter!("queries.count");
@@ -140,21 +140,21 @@ Since [`prometheus`] crate validates the metrics format very strictly, not every
 
 - The same metric should use always the same set of labels:
   ```rust,should_panic
-  metrics_prometheus::must_install();
+  metrics_prometheus::install();
 
   metrics::increment_counter!("count");
   // panics: Inconsistent label cardinality, expect 0 label values, but got 1
   metrics::increment_counter!("count", "whose" => "mine");
   ```
   ```rust,should_panic
-  metrics_prometheus::must_install();
+  metrics_prometheus::install();
 
   metrics::increment_counter!("count", "kind" => "owned");
   // panics: label name kind missing in label map
   metrics::increment_counter!("count", "whose" => "mine");
   ```
   ```rust,should_panic
-  metrics_prometheus::must_install();
+  metrics_prometheus::install();
 
   metrics::increment_counter!("count", "kind" => "owned");
   // panics: Inconsistent label cardinality, expect 1 label values, but got 2
@@ -163,7 +163,7 @@ Since [`prometheus`] crate validates the metrics format very strictly, not every
 
 - The same name cannot be used for different types of metrics:
   ```rust,should_panic
-  metrics_prometheus::must_install();
+  metrics_prometheus::install();
 
   metrics::increment_counter!("count");
   // panics: Duplicate metrics collector registration attempted
@@ -172,7 +172,7 @@ Since [`prometheus`] crate validates the metrics format very strictly, not every
 
 - Any metric registered in a [`prometheus::Registry`] directly, without using [`metrics`] or this crate interfaces, is not usable via [`metrics`] facade and will cause a [`prometheus::Error`].
   ```rust,should_panic
-  metrics_prometheus::must_install();
+  metrics_prometheus::install();
   
   prometheus::default_registry()
       .register(Box::new(prometheus::Gauge::new("value", "help")?))?;
@@ -196,7 +196,7 @@ use metrics_prometheus::failure::strategy;
 
 metrics_prometheus::Recorder::builder()
     .with_failure_strategy(strategy::NoOp)
-    .must_build_and_install();
+    .build_and_install();
 
 // `prometheus::Error` is ignored inside.
 metrics::increment_counter!("invalid.name");

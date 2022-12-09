@@ -6,6 +6,20 @@ All user visible changes to this project will be documented in this file. This p
 
 
 
+## [0.3.0] · 2022-12-??
+[0.3.0]: /../../tree/v0.3.0
+
+[Diff](/../../compare/v0.2.0...v0.3.0)
+
+### BC Breaks
+
+- Switched functions naming convention from `must_*` for panicking to `try_*` for fallible. ([#1])
+
+[#1]: /../../pull/1
+
+
+
+
 ## [0.2.0] · 2022-12-08
 [0.2.0]: /../../tree/v0.2.0
 
