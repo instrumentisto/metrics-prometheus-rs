@@ -9,9 +9,11 @@ use std::{
 
 use sealed::sealed;
 
-use crate::{metric, Metric};
+use crate::{metric, MaybeOwned, Metric};
 
 /// Thread-safe [`HashMap`] a [`Collection`] is built upon.
+// TODO: Remove `Arc` here by implementing `metrics_util::registry::Storage` for
+//       `Arc<T>` via PR.
 pub type Map<K, V> = Arc<RwLock<HashMap<K, V>>>;
 
 /// Name identifying a [`metric::Bundle`] stored in a [`Mutable`] storage.
@@ -298,21 +300,61 @@ impl metrics_util::registry::Storage<metrics::Key> for Mutable {
     }
 }
 
+pub type ImmutableCollection<M> = HashMap<KeyName, prometheus::Result<M>>;
+
+#[sealed]
+pub trait Get<C> {
+    #[must_use]
+    fn collection(&self) -> &C;
+}
+
+#[sealed]
+impl Get<ImmutableCollection<metric::PrometheusIntCounter>> for Immutable {
+    fn collection(&self) -> &ImmutableCollection<metric::PrometheusIntCounter> {
+        &self.counters
+    }
+}
+
+#[sealed]
+impl Get<ImmutableCollection<metric::PrometheusGauge>> for Immutable {
+    fn collection(&self) -> &ImmutableCollection<metric::PrometheusGauge> {
+        &self.gauges
+    }
+}
+
+#[sealed]
+impl Get<ImmutableCollection<metric::PrometheusHistogram>> for Immutable {
+    fn collection(&self) -> &ImmutableCollection<metric::PrometheusHistogram> {
+        &self.histograms
+    }
+}
+
+#[derive(Debug)]
 pub struct Immutable {
-    counters:
-        HashMap<KeyName, prometheus::Result<metric::PrometheusIntCounter>>,
-    //gauges: HashMap<KeyName, metric::PrometheusGauge>,
-    //histogram: HashMap<KeyName, metric::PrometheusHistogram>,
+    counters: ImmutableCollection<metric::PrometheusIntCounter>,
+    gauges: ImmutableCollection<metric::PrometheusGauge>,
+    histograms: ImmutableCollection<metric::PrometheusHistogram>,
 }
 
 impl Immutable {
-    pub fn get_metric<M>(
-        &self,
+    pub fn get_metric<'s, M>(
+        &'s self,
         key: &metrics::Key,
-    ) -> Result<&Metric<<M as metric::Bundled>::Bundle>, &prometheus::Error>
+    ) -> Option<Result<Metric<M>, MaybeOwned<'s, prometheus::Error>>>
     where
         M: metric::Bundled,
+        <M as metric::Bundled>::Bundle: metric::Bundle<Single = M> + 's,
+        Self: Get<ImmutableCollection<<M as metric::Bundled>::Bundle>>,
     {
-        todo!()
+        use metric::Bundle as _;
+
+        self.collection().get(key.name()).map(|res| {
+            res.as_ref()
+                .map_err(MaybeOwned::Borrowed)
+                .and_then(|bundle| {
+                    bundle.get_single_metric(key).map_err(MaybeOwned::Owned)
+                })
+                .map(Metric::wrap)
+        })
     }
 }

@@ -142,14 +142,20 @@ pub mod metric;
 pub mod recorder;
 pub mod storage;
 
-use std::borrow::Cow;
+use std::{
+    borrow::{Borrow, Cow},
+    ops::Deref,
+};
 
 // For surviving MSRV check only.
 // TODO: Fix in `prometheus` crate.
 use thiserror as _;
 
 #[doc(inline)]
-pub use self::{metric::Metric, recorder::Recorder};
+pub use self::{
+    metric::Metric,
+    recorder::{Freezable as FreezableRecorder, Recorder},
+};
 
 /// Tries to install a default [`Recorder`] (backed by the
 /// [`prometheus::default_registry()`]) as [`metrics::recorder()`].
@@ -159,6 +165,11 @@ pub use self::{metric::Metric, recorder::Recorder};
 /// If the [`Recorder`] fails to be installed as [`metrics::recorder()`].
 pub fn try_install() -> Result<Recorder, metrics::SetRecorderError> {
     Recorder::builder().try_build_and_install()
+}
+
+pub fn try_install_freezable(
+) -> Result<FreezableRecorder, metrics::SetRecorderError> {
+    Recorder::builder().try_build_freezable_and_install()
 }
 
 /// Installs a default [`Recorder`] (backed by the
@@ -172,6 +183,13 @@ pub fn try_install() -> Result<Recorder, metrics::SetRecorderError> {
 #[allow(clippy::must_use_candidate)]
 pub fn install() -> Recorder {
     Recorder::builder().build_and_install()
+}
+
+// We do intentionally omit `#[must_use]` here, as we don't want to force
+// library users using the returned `Recorder` directly.
+#[allow(clippy::must_use_candidate)]
+pub fn install_freezable() -> FreezableRecorder {
+    Recorder::builder().build_freezable_and_install()
 }
 
 /// Ad hoc polymorphism for accepting either a reference or an owned function
@@ -191,5 +209,33 @@ impl<'a> IntoCow<'a, Self> for prometheus::Registry {
 impl<'a> IntoCow<'a, prometheus::Registry> for &'a prometheus::Registry {
     fn into_cow(self) -> Cow<'a, prometheus::Registry> {
         Cow::Borrowed(self)
+    }
+}
+
+pub enum MaybeOwned<'b, B> {
+    Borrowed(&'b B),
+    Owned(B),
+}
+
+impl<'b, B> Deref for MaybeOwned<'b, B> {
+    type Target = B;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            Self::Borrowed(r) => *r,
+            Self::Owned(v) => v,
+        }
+    }
+}
+
+impl<'b, B> AsRef<B> for MaybeOwned<'b, B> {
+    fn as_ref(&self) -> &B {
+        &**self
+    }
+}
+
+impl<'b, B> Borrow<B> for MaybeOwned<'b, B> {
+    fn borrow(&self) -> &B {
+        &**self
     }
 }

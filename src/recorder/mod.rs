@@ -1,5 +1,6 @@
 //! [`metrics::Recorder`] implementations.
 
+pub mod freezable;
 pub mod layer;
 
 use std::{fmt, sync::Arc};
@@ -10,6 +11,8 @@ use crate::{
 };
 
 pub use metrics_util::layers::Layer;
+
+pub use self::freezable::Recorder as Freezable;
 
 /// [`metrics::Recorder`] registering metrics in a [`prometheus::Registry`] and
 /// powered by a [`metrics::Registry`] built on top of a [`storage::Mutable`].
@@ -794,6 +797,27 @@ impl<S, L> Builder<S, L> {
         Ok(rec)
     }
 
+    pub fn try_build_freezable_and_install(
+        self,
+    ) -> Result<freezable::Recorder<S>, metrics::SetRecorderError>
+    where
+        S: failure::Strategy + Clone,
+        L: Layer<freezable::Recorder<S>>,
+        <L as Layer<freezable::Recorder<S>>>::Output:
+            metrics::Recorder + 'static,
+    {
+        let Self { storage, failure_strategy, layers } = self;
+        let rec = freezable::Recorder::wrap(Recorder {
+            metrics: Arc::new(metrics_util::registry::Registry::new(
+                storage.clone(),
+            )),
+            storage,
+            failure_strategy,
+        });
+        metrics::set_boxed_recorder(Box::new(layers.layer(rec.clone())))?;
+        Ok(rec)
+    }
+
     /// Builds a [`Recorder`] out of this [`Builder`] and installs it as
     /// [`metrics::recorder()`].
     ///
@@ -864,6 +888,21 @@ impl<S, L> Builder<S, L> {
         self.try_build_and_install().unwrap_or_else(|e| {
             panic!(
                 "failed to install `metrics_prometheus::Recorder` as \
+                 `metrics::recorder()`: {e}",
+            )
+        })
+    }
+
+    pub fn build_freezable_and_install(self) -> freezable::Recorder<S>
+    where
+        S: failure::Strategy + Clone,
+        L: Layer<freezable::Recorder<S>>,
+        <L as Layer<freezable::Recorder<S>>>::Output:
+            metrics::Recorder + 'static,
+    {
+        self.try_build_freezable_and_install().unwrap_or_else(|e| {
+            panic!(
+                "failed to install `metrics_prometheus::FreezableRecorder` as \
                  `metrics::recorder()`: {e}",
             )
         })
