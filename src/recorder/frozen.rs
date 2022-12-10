@@ -5,9 +5,9 @@ use crate::{
     storage,
 };
 
-#[derive(Clone)]
+#[derive(Debug)]
 pub struct Recorder<FailureStrategy = PanicInDebugNoOpInRelease> {
-    pub(super) storage: Arc<storage::Immutable>,
+    pub(super) storage: storage::Immutable,
 
     /// [`failure::Strategy`] to apply when a [`prometheus::Error`] is
     /// encountered inside [`metrics::Recorder`] methods.

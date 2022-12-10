@@ -4,7 +4,7 @@ use once_cell::sync::OnceCell;
 
 use crate::failure::strategy::PanicInDebugNoOpInRelease;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Recorder<FailureStrategy = PanicInDebugNoOpInRelease> {
     usual: super::Recorder<FailureStrategy>,
     frozen: Arc<OnceCell<super::Frozen<FailureStrategy>>>,
