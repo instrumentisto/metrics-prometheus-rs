@@ -142,11 +142,6 @@ pub mod metric;
 pub mod recorder;
 pub mod storage;
 
-use std::{
-    borrow::{Borrow, Cow},
-    ops::Deref,
-};
-
 // For surviving MSRV check only.
 // TODO: Fix in `prometheus` crate.
 use thiserror as _;
@@ -192,52 +187,4 @@ pub fn install() -> Recorder {
 #[allow(clippy::must_use_candidate)]
 pub fn install_freezable() -> FreezableRecorder {
     Recorder::builder().build_freezable_and_install()
-}
-
-/// Ad hoc polymorphism for accepting either a reference or an owned function
-/// argument.
-pub trait IntoCow<'a, T: ToOwned + ?Sized + 'a> {
-    /// Wraps this reference (or owned value) into a [`Cow`].
-    #[must_use]
-    fn into_cow(self) -> Cow<'a, T>;
-}
-
-impl<'a> IntoCow<'a, Self> for prometheus::Registry {
-    fn into_cow(self) -> Cow<'a, Self> {
-        Cow::Owned(self)
-    }
-}
-
-impl<'a> IntoCow<'a, prometheus::Registry> for &'a prometheus::Registry {
-    fn into_cow(self) -> Cow<'a, prometheus::Registry> {
-        Cow::Borrowed(self)
-    }
-}
-
-pub enum MaybeOwned<'b, B> {
-    Borrowed(&'b B),
-    Owned(B),
-}
-
-impl<'b, B> Deref for MaybeOwned<'b, B> {
-    type Target = B;
-
-    fn deref(&self) -> &Self::Target {
-        match self {
-            Self::Borrowed(r) => *r,
-            Self::Owned(v) => v,
-        }
-    }
-}
-
-impl<'b, B> AsRef<B> for MaybeOwned<'b, B> {
-    fn as_ref(&self) -> &B {
-        &**self
-    }
-}
-
-impl<'b, B> Borrow<B> for MaybeOwned<'b, B> {
-    fn borrow(&self) -> &B {
-        &**self
-    }
 }

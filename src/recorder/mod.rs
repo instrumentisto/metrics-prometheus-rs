@@ -4,11 +4,11 @@ pub mod freezable;
 pub mod frozen;
 pub mod layer;
 
-use std::{fmt, sync::Arc};
+use std::{borrow::Cow, fmt, sync::Arc};
 
 use crate::{
     failure::{self, strategy::PanicInDebugNoOpInRelease},
-    metric, storage, IntoCow,
+    metric, storage,
 };
 
 pub use metrics_util::layers::Layer;
@@ -288,8 +288,9 @@ impl<S> Recorder<S> {
         M: metric::Bundled + prometheus::core::Collector,
         <M as metric::Bundled>::Bundle:
             prometheus::core::Collector + Clone + 'static,
-        storage::Mutable:
-            storage::GetCollection<<M as metric::Bundled>::Bundle>,
+        storage::Mutable: storage::Get<
+            storage::mutable::Collection<<M as metric::Bundled>::Bundle>,
+        >,
     {
         self.storage.register_external(metric)
     }
@@ -369,8 +370,9 @@ impl<S> Recorder<S> {
         M: metric::Bundled + prometheus::core::Collector,
         <M as metric::Bundled>::Bundle:
             prometheus::core::Collector + Clone + 'static,
-        storage::Mutable:
-            storage::GetCollection<<M as metric::Bundled>::Bundle>,
+        storage::Mutable: storage::Get<
+            storage::mutable::Collection<<M as metric::Bundled>::Bundle>,
+        >,
     {
         self.try_register_metric(metric).unwrap_or_else(|e| {
             panic!("failed to register `prometheus` metric: {e}")
@@ -644,8 +646,9 @@ impl<S, L> Builder<S, L> {
         M: metric::Bundled + prometheus::core::Collector,
         <M as metric::Bundled>::Bundle:
             prometheus::core::Collector + Clone + 'static,
-        storage::Mutable:
-            storage::GetCollection<<M as metric::Bundled>::Bundle>,
+        storage::Mutable: storage::Get<
+            storage::mutable::Collection<<M as metric::Bundled>::Bundle>,
+        >,
     {
         self.storage.register_external(metric)?;
         Ok(self)
@@ -708,8 +711,9 @@ impl<S, L> Builder<S, L> {
         M: metric::Bundled + prometheus::core::Collector,
         <M as metric::Bundled>::Bundle:
             prometheus::core::Collector + Clone + 'static,
-        storage::Mutable:
-            storage::GetCollection<<M as metric::Bundled>::Bundle>,
+        storage::Mutable: storage::Get<
+            storage::mutable::Collection<<M as metric::Bundled>::Bundle>,
+        >,
     {
         self.try_with_metric(metric).unwrap_or_else(|e| {
             panic!("failed to register `prometheus` metric: {e}")
@@ -957,5 +961,25 @@ impl<S, H, T> Builder<S, layer::Stack<H, T>> {
             failure_strategy: self.failure_strategy,
             layers: self.layers.push(layer),
         }
+    }
+}
+
+/// Ad hoc polymorphism for accepting either a reference or an owned function
+/// argument.
+pub trait IntoCow<'a, T: ToOwned + ?Sized + 'a> {
+    /// Wraps this reference (or owned value) into a [`Cow`].
+    #[must_use]
+    fn into_cow(self) -> Cow<'a, T>;
+}
+
+impl<'a> IntoCow<'a, Self> for prometheus::Registry {
+    fn into_cow(self) -> Cow<'a, Self> {
+        Cow::Owned(self)
+    }
+}
+
+impl<'a> IntoCow<'a, prometheus::Registry> for &'a prometheus::Registry {
+    fn into_cow(self) -> Cow<'a, prometheus::Registry> {
+        Cow::Borrowed(self)
     }
 }
