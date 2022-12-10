@@ -58,12 +58,11 @@ where
         self.storage
             .get_metric::<prometheus::IntCounter>(key)
             .and_then(|res| {
-                res.map_err(|e| match self.failure_strategy.decide(&*e) {
+                res.map_err(|e| match self.failure_strategy.decide(&e) {
                     failure::Action::NoOp => (),
                     failure::Action::Panic => panic!(
                         "failed to register `prometheus::IntCounter` metric: \
-                         {}",
-                        *e,
+                         {e}",
                     ),
                 })
                 .ok()
@@ -78,11 +77,10 @@ where
         self.storage
             .get_metric::<prometheus::Gauge>(key)
             .and_then(|res| {
-                res.map_err(|e| match self.failure_strategy.decide(&*e) {
+                res.map_err(|e| match self.failure_strategy.decide(&e) {
                     failure::Action::NoOp => (),
                     failure::Action::Panic => panic!(
-                        "failed to register `prometheus::Gauge` metric: {}",
-                        *e,
+                        "failed to register `prometheus::Gauge` metric: {e}",
                     ),
                 })
                 .ok()
@@ -97,11 +95,11 @@ where
         self.storage
             .get_metric::<prometheus::Histogram>(key)
             .and_then(|res| {
-                res.map_err(|e| match self.failure_strategy.decide(&*e) {
+                res.map_err(|e| match self.failure_strategy.decide(&e) {
                     failure::Action::NoOp => (),
                     failure::Action::Panic => panic!(
-                        "failed to register `prometheus::Histogram` metric: {}",
-                        *e,
+                        "failed to register `prometheus::Histogram` metric: \
+                         {e}",
                     ),
                 })
                 .ok()

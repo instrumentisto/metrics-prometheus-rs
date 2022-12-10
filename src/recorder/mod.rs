@@ -823,6 +823,21 @@ impl<S, L> Builder<S, L> {
         Ok(rec)
     }
 
+    pub fn try_build_frozen_and_install(
+        self,
+    ) -> Result<prometheus::Registry, metrics::SetRecorderError>
+    where
+        S: failure::Strategy + Clone,
+        L: Layer<frozen::Recorder<S>>,
+        <L as Layer<frozen::Recorder<S>>>::Output: metrics::Recorder + 'static,
+    {
+        let Self { storage, failure_strategy, layers } = self;
+        let rec =
+            frozen::Recorder { storage: (&storage).into(), failure_strategy };
+        metrics::set_boxed_recorder(Box::new(layers.layer(rec)))?;
+        Ok(storage.prometheus)
+    }
+
     /// Builds a [`Recorder`] out of this [`Builder`] and installs it as
     /// [`metrics::recorder()`].
     ///
@@ -908,6 +923,20 @@ impl<S, L> Builder<S, L> {
         self.try_build_freezable_and_install().unwrap_or_else(|e| {
             panic!(
                 "failed to install `metrics_prometheus::FreezableRecorder` as \
+                 `metrics::recorder()`: {e}",
+            )
+        })
+    }
+
+    pub fn build_frozen_and_install(self) -> prometheus::Registry
+    where
+        S: failure::Strategy + Clone,
+        L: Layer<frozen::Recorder<S>>,
+        <L as Layer<frozen::Recorder<S>>>::Output: metrics::Recorder + 'static,
+    {
+        self.try_build_frozen_and_install().unwrap_or_else(|e| {
+            panic!(
+                "failed to install `metrics_prometheus::FrozenRecorder` as \
                  `metrics::recorder()`: {e}",
             )
         })

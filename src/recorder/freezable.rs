@@ -15,6 +15,16 @@ impl<S> Recorder<S> {
     pub(super) fn wrap(usual: super::Recorder<S>) -> Self {
         Self { usual, frozen: Arc::default() }
     }
+
+    pub fn freeze(&self)
+    where
+        S: Clone,
+    {
+        let _ = self.frozen.get_or_init(|| super::Frozen {
+            storage: (&self.usual.storage).into(),
+            failure_strategy: self.usual.failure_strategy.clone(),
+        });
+    }
 }
 
 impl<S> metrics::Recorder for Recorder<S>

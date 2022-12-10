@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, collections::HashMap, ops::Deref, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use sealed::sealed;
 
@@ -6,8 +6,7 @@ use crate::{metric, Metric};
 
 use super::KeyName;
 
-pub type Collection<M> =
-    HashMap<KeyName, prometheus::Result<metric::Describable<M>>>;
+pub type Collection<M> = HashMap<KeyName, metric::Describable<M>>;
 
 #[derive(Debug)]
 pub struct Storage {
@@ -46,61 +45,53 @@ impl Storage {
     {
         use super::Get as _;
 
-        if let Some(Ok(bundle)) = self.collection().get(name) {
+        if let Some(bundle) = self.collection().get(name) {
             bundle.description.store(Arc::new(description));
         };
     }
 
-    pub fn get_metric<'s, M>(
-        &'s self,
+    pub fn get_metric<M>(
+        &self,
         key: &metrics::Key,
-    ) -> Option<Result<Metric<M>, MaybeOwned<'s, prometheus::Error>>>
+    ) -> Option<Result<Metric<M>, prometheus::Error>>
     where
         M: metric::Bundled,
-        <M as metric::Bundled>::Bundle: metric::Bundle<Single = M> + 's,
+        <M as metric::Bundled>::Bundle: metric::Bundle<Single = M>,
         Self: super::Get<Collection<<M as metric::Bundled>::Bundle>>,
     {
         use super::Get as _;
         use metric::Bundle as _;
 
-        self.collection().get(key.name()).map(|res| {
-            res.as_ref()
-                .map_err(MaybeOwned::Borrowed)
-                .and_then(|bundle| {
-                    bundle
-                        .metric
-                        .get_single_metric(key)
-                        .map_err(MaybeOwned::Owned)
-                })
-                .map(Metric::wrap)
+        self.collection().get(key.name()).map(|bundle| {
+            bundle.metric.get_single_metric(key).map(Metric::wrap)
         })
     }
 }
 
-pub enum MaybeOwned<'b, B> {
-    Borrowed(&'b B),
-    Owned(B),
-}
-
-impl<'b, B> Deref for MaybeOwned<'b, B> {
-    type Target = B;
-
-    fn deref(&self) -> &Self::Target {
-        match self {
-            Self::Borrowed(r) => *r,
-            Self::Owned(v) => v,
+impl From<&super::mutable::Storage> for Storage {
+    fn from(mutable: &super::mutable::Storage) -> Self {
+        Self {
+            counters: mutable
+                .counters
+                .write()
+                .unwrap()
+                .drain()
+                .filter_map(|(name, bundle)| Some((name, bundle.transpose()?)))
+                .collect(),
+            gauges: mutable
+                .gauges
+                .write()
+                .unwrap()
+                .drain()
+                .filter_map(|(name, bundle)| Some((name, bundle.transpose()?)))
+                .collect(),
+            histograms: mutable
+                .histograms
+                .write()
+                .unwrap()
+                .drain()
+                .filter_map(|(name, bundle)| Some((name, bundle.transpose()?)))
+                .collect(),
         }
-    }
-}
-
-impl<'b, B> AsRef<B> for MaybeOwned<'b, B> {
-    fn as_ref(&self) -> &B {
-        &**self
-    }
-}
-
-impl<'b, B> Borrow<B> for MaybeOwned<'b, B> {
-    fn borrow(&self) -> &B {
-        &**self
     }
 }

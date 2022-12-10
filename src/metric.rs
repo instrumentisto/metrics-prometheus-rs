@@ -224,6 +224,14 @@ impl<M> Describable<M> {
     }
 }
 
+impl<M> Describable<Option<M>> {
+    #[must_use]
+    pub fn transpose(self) -> Option<Describable<M>> {
+        self.metric
+            .map(|metric| Describable { description: self.description, metric })
+    }
+}
+
 impl<M> prometheus::core::Collector for Describable<M>
 where
     M: prometheus::core::Collector,

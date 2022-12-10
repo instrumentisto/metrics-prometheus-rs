@@ -50,15 +50,15 @@ pub struct Storage {
 
     /// [`Collection`] of [`prometheus::IntCounter`] metrics registered in this
     /// mutable [`Storage`].
-    counters: Collection<metric::PrometheusIntCounter>,
+    pub(super) counters: Collection<metric::PrometheusIntCounter>,
 
     /// [`Collection`] of [`prometheus::Gauge`] metrics registered in this
     /// mutable [`Storage`].
-    gauges: Collection<metric::PrometheusGauge>,
+    pub(super) gauges: Collection<metric::PrometheusGauge>,
 
     /// [`Collection`] of [`prometheus::Histogram`] metrics registered in this
     /// mutable [`Storage`].
-    histograms: Collection<metric::PrometheusHistogram>,
+    pub(super) histograms: Collection<metric::PrometheusHistogram>,
 }
 
 #[sealed]
