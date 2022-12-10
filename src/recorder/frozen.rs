@@ -20,29 +20,38 @@ where
 {
     fn describe_counter(
         &self,
-        _: metrics::KeyName,
+        name: metrics::KeyName,
         _: Option<metrics::Unit>,
-        _: metrics::SharedString,
+        description: metrics::SharedString,
     ) {
-        // No-op
+        self.storage.describe::<prometheus::IntCounter>(
+            name.as_str(),
+            description.into_owned(),
+        );
     }
 
     fn describe_gauge(
         &self,
-        _: metrics::KeyName,
+        name: metrics::KeyName,
         _: Option<metrics::Unit>,
-        _: metrics::SharedString,
+        description: metrics::SharedString,
     ) {
-        // No-op
+        self.storage.describe::<prometheus::Gauge>(
+            name.as_str(),
+            description.into_owned(),
+        );
     }
 
     fn describe_histogram(
         &self,
-        _: metrics::KeyName,
+        name: metrics::KeyName,
         _: Option<metrics::Unit>,
-        _: metrics::SharedString,
+        description: metrics::SharedString,
     ) {
-        // No-op
+        self.storage.describe::<prometheus::Histogram>(
+            name.as_str(),
+            description.into_owned(),
+        );
     }
 
     fn register_counter(&self, key: &metrics::Key) -> metrics::Counter {

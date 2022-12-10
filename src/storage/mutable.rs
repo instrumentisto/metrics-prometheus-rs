@@ -122,19 +122,17 @@ impl Storage {
 
         use super::Get as _;
 
-        // TODO: Just drop the guard, you idiot.
-        // We do `.clone()` here intentionally to release `.read()` lock.
-        let metric_opt = self.collection().read().unwrap().get(name).cloned();
-
-        if let Some(metric) = metric_opt {
+        let read_storage = self.collection().read().unwrap();
+        if let Some(metric) = read_storage.get(name) {
             metric.description.store(Arc::new(description));
         } else {
-            let mut storage = self.collection().write().unwrap();
+            drop(read_storage);
+            let mut write_storage = self.collection().write().unwrap();
 
-            if let Some(metric) = storage.get(name) {
+            if let Some(metric) = write_storage.get(name) {
                 metric.description.store(Arc::new(description));
             } else {
-                drop(storage.insert(
+                drop(write_storage.insert(
                     name.into(),
                     metric::Describable::only_description(description),
                 ));

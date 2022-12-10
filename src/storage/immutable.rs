@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, collections::HashMap, ops::Deref};
+use std::{borrow::Borrow, collections::HashMap, ops::Deref, sync::Arc};
 
 use sealed::sealed;
 
@@ -6,7 +6,8 @@ use crate::{metric, Metric};
 
 use super::KeyName;
 
-pub type Collection<M> = HashMap<KeyName, prometheus::Result<M>>;
+pub type Collection<M> =
+    HashMap<KeyName, prometheus::Result<metric::Describable<M>>>;
 
 #[derive(Debug)]
 pub struct Storage {
@@ -37,6 +38,19 @@ impl super::Get<Collection<metric::PrometheusHistogram>> for Storage {
 }
 
 impl Storage {
+    pub fn describe<M>(&self, name: &str, description: String)
+    where
+        M: metric::Bundled,
+        <M as metric::Bundled>::Bundle: metric::Bundle<Single = M>,
+        Self: super::Get<Collection<<M as metric::Bundled>::Bundle>>,
+    {
+        use super::Get as _;
+
+        if let Some(Ok(bundle)) = self.collection().get(name) {
+            bundle.description.store(Arc::new(description));
+        };
+    }
+
     pub fn get_metric<'s, M>(
         &'s self,
         key: &metrics::Key,
@@ -53,7 +67,10 @@ impl Storage {
             res.as_ref()
                 .map_err(MaybeOwned::Borrowed)
                 .and_then(|bundle| {
-                    bundle.get_single_metric(key).map_err(MaybeOwned::Owned)
+                    bundle
+                        .metric
+                        .get_single_metric(key)
+                        .map_err(MaybeOwned::Owned)
                 })
                 .map(Metric::wrap)
         })
