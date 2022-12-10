@@ -18,7 +18,7 @@ use super::KeyName;
 //       `Arc<T>` via PR.
 pub type Map<K, V> = Arc<RwLock<HashMap<K, V>>>;
 
-/// [`Collection`] of [`Describable`] [`metric::Bundle`]s, stored in a mutable
+/// Collection of [`Describable`] [`metric::Bundle`]s, stored in a mutable
 /// [`Storage`].
 ///
 /// [`Describable`]: metric::Describable
