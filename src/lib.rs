@@ -1,15 +1,22 @@
 // These links overwrite the ones in `README.md`
 // to become proper intra-doc links in Rust docs.
+//! [`.freeze()`]: FreezableRecorder::freeze()
+//! [`Arc`]: std::sync::Arc
 //! [`arc-swap`]: arc_swap
+//! [`AtomicBool`]: std::sync::atomic::AtomicBool
 //! [`Describable`]: metric::Describable
 //! [`failure::strategy`]: failure::strategy
 //! [`failure::Strategy`]: failure::Strategy
+//! [`FreezableRecorder`]: FreezableRecorder
+//! [`FrozenRecorder`]: FrozenRecorder
+//! [`HashMap`]: std::collections::HashMap
 //! [`metrics`]: metrics
 //! [`metrics::Counter`]: metrics::Counter
 //! [`metrics::Counter::noop()`]: metrics::Counter::noop()
 //! [`metrics::Gauge`]: metrics::Gauge
 //! [`metrics::Histogram`]: metrics::Histogram
 //! [`metrics::Recorder`]: metrics::Recorder
+//! [`metrics::Registry`]: metrics_util::registry::Registry
 //! [`metrics::Unit`]: metrics::Unit
 //! [`PanicInDebugNoOpInRelease`]: failure::strategy::PanicInDebugNoOpInRelease
 //! [`prometheus`]: prometheus
@@ -22,6 +29,7 @@
 //! [`prometheus::IntCounterVec`]: prometheus::IntCounterVec
 //! [`prometheus::MetricVec`]: prometheus::core::MetricVec
 //! [`prometheus::Registry`]: prometheus::Registry
+//! [`read`-lock]: std::sync::RwLock::read()
 //! [`Recorder`]: Recorder
 #![doc = include_str!("../README.md")]
 #![doc(
@@ -142,14 +150,17 @@ pub mod metric;
 pub mod recorder;
 pub mod storage;
 
-use std::borrow::Cow;
-
 // For surviving MSRV check only.
 // TODO: Fix in `prometheus` crate.
 use thiserror as _;
 
 #[doc(inline)]
-pub use self::{metric::Metric, recorder::Recorder};
+pub use self::{
+    metric::Metric,
+    recorder::{
+        Freezable as FreezableRecorder, Frozen as FrozenRecorder, Recorder,
+    },
+};
 
 /// Tries to install a default [`Recorder`] (backed by the
 /// [`prometheus::default_registry()`]) as [`metrics::recorder()`].
@@ -159,6 +170,18 @@ pub use self::{metric::Metric, recorder::Recorder};
 /// If the [`Recorder`] fails to be installed as [`metrics::recorder()`].
 pub fn try_install() -> Result<Recorder, metrics::SetRecorderError> {
     Recorder::builder().try_build_and_install()
+}
+
+/// Tries to install a default [`FreezableRecorder`] (backed by the
+/// [`prometheus::default_registry()`]) as [`metrics::recorder()`].
+///
+/// # Errors
+///
+/// If the [`FreezableRecorder`] fails to be installed as
+/// [`metrics::recorder()`].
+pub fn try_install_freezable(
+) -> Result<FreezableRecorder, metrics::SetRecorderError> {
+    Recorder::builder().try_build_freezable_and_install()
 }
 
 /// Installs a default [`Recorder`] (backed by the
@@ -174,22 +197,16 @@ pub fn install() -> Recorder {
     Recorder::builder().build_and_install()
 }
 
-/// Ad hoc polymorphism for accepting either a reference or an owned function
-/// argument.
-pub trait IntoCow<'a, T: ToOwned + ?Sized + 'a> {
-    /// Wraps this reference (or owned value) into a [`Cow`].
-    #[must_use]
-    fn into_cow(self) -> Cow<'a, T>;
-}
-
-impl<'a> IntoCow<'a, Self> for prometheus::Registry {
-    fn into_cow(self) -> Cow<'a, Self> {
-        Cow::Owned(self)
-    }
-}
-
-impl<'a> IntoCow<'a, prometheus::Registry> for &'a prometheus::Registry {
-    fn into_cow(self) -> Cow<'a, prometheus::Registry> {
-        Cow::Borrowed(self)
-    }
+/// Installs a default [`FreezableRecorder`] (backed by the
+/// [`prometheus::default_registry()`]) as [`metrics::recorder()`].
+///
+/// # Panics
+///
+/// If the [`FreezableRecorder`] fails to be installed as
+/// [`metrics::recorder()`].
+// We do intentionally omit `#[must_use]` here, as we don't want to force
+// library users using the returned `FreezableRecorder` directly.
+#[allow(clippy::must_use_candidate)]
+pub fn install_freezable() -> FreezableRecorder {
+    Recorder::builder().build_freezable_and_install()
 }

@@ -1,4 +1,4 @@
-//! [`metrics::registry::Storage`] implementations.
+//! Mutable [`metrics::registry::Storage`] backed by a [`prometheus::Registry`].
 //!
 //! [`metrics::registry::Storage`]: metrics_util::registry::Storage
 
@@ -11,25 +11,18 @@ use sealed::sealed;
 
 use crate::{metric, Metric};
 
+use super::KeyName;
+
 /// Thread-safe [`HashMap`] a [`Collection`] is built upon.
+// TODO: Remove `Arc` here by implementing `metrics_util::registry::Storage` for
+//       `Arc<T>` via PR.
 pub type Map<K, V> = Arc<RwLock<HashMap<K, V>>>;
 
-/// Name identifying a [`metric::Bundle`] stored in a [`Mutable`] storage.
-pub type KeyName = String;
-
-/// [`Collection`] of [`Describable`] [`metric::Bundle`]s, stored in a
-/// [`Mutable`] storage.
+/// Collection of [`Describable`] [`metric::Bundle`]s, stored in a mutable
+/// [`Storage`].
 ///
 /// [`Describable`]: metric::Describable
 pub type Collection<M> = Map<KeyName, metric::Describable<Option<M>>>;
-
-/// Retrieving a [`Collection`] of `M`etrics from a [`Mutable`] storage.
-#[sealed]
-pub trait GetCollection<M> {
-    /// Returns a [`Collection`] of `M`etrics stored in a [`Mutable`] storage.
-    #[must_use]
-    fn collection(&self) -> &Collection<M>;
-}
 
 /// [`metrics::registry::Storage`] backed by a [`prometheus::Registry`] and
 /// allowing to change a [`help` description] of the registered [`prometheus`]
@@ -41,56 +34,55 @@ pub trait GetCollection<M> {
 ///
 /// # Errors
 ///
-/// This [`Mutable`] storage returns [`metric::Fallible`] in its
+/// This mutable [`Storage`] returns [`metric::Fallible`] in its
 /// [`metrics::registry::Storage`] interface, because it cannot panic, as is
 /// called inside [`metrics::Registry`] and, so, may poison its inner locks.
-/// That's why possible errors are passed through up to the
-/// [`metrics::Recorder`] using this [`Mutable`] storage, and should be resolved
-/// there.
+/// That's why possible errors are passed through, up to the
+/// [`metrics::Recorder`] using this [`Storage`], and should be resolved there.
 ///
 /// [`metrics::Registry`]: metrics_util::registry::Registry
 /// [`metrics::registry::Storage`]: metrics_util::registry::Storage
 /// [`help` description]: prometheus::proto::MetricFamily::get_help
 #[derive(Clone, Debug)]
-pub struct Mutable {
-    /// [`prometheus::Registry`] backing this [`Mutable`] storage.
+pub struct Storage {
+    /// [`prometheus::Registry`] backing this mutable [`Storage`].
     pub(crate) prometheus: prometheus::Registry,
 
     /// [`Collection`] of [`prometheus::IntCounter`] metrics registered in this
-    /// [`Mutable`] storage.
-    counters: Collection<metric::PrometheusIntCounter>,
+    /// mutable [`Storage`].
+    pub(super) counters: Collection<metric::PrometheusIntCounter>,
 
     /// [`Collection`] of [`prometheus::Gauge`] metrics registered in this
-    /// [`Mutable`] storage.
-    gauges: Collection<metric::PrometheusGauge>,
+    /// mutable [`Storage`].
+    pub(super) gauges: Collection<metric::PrometheusGauge>,
 
     /// [`Collection`] of [`prometheus::Histogram`] metrics registered in this
-    /// [`Mutable`] storage.
-    histograms: Collection<metric::PrometheusHistogram>,
+    /// mutable [`Storage`].
+    pub(super) histograms: Collection<metric::PrometheusHistogram>,
 }
 
 #[sealed]
-impl GetCollection<metric::PrometheusIntCounter> for Mutable {
+impl super::Get<Collection<metric::PrometheusIntCounter>> for Storage {
     fn collection(&self) -> &Collection<metric::PrometheusIntCounter> {
         &self.counters
     }
 }
 
 #[sealed]
-impl GetCollection<metric::PrometheusGauge> for Mutable {
+impl super::Get<Collection<metric::PrometheusGauge>> for Storage {
     fn collection(&self) -> &Collection<metric::PrometheusGauge> {
         &self.gauges
     }
 }
 
 #[sealed]
-impl GetCollection<metric::PrometheusHistogram> for Mutable {
+impl super::Get<Collection<metric::PrometheusHistogram>> for Storage {
     fn collection(&self) -> &Collection<metric::PrometheusHistogram> {
         &self.histograms
     }
 }
 
-impl Default for Mutable {
+impl Default for Storage {
     fn default() -> Self {
         Self {
             prometheus: prometheus::default_registry().clone(),
@@ -101,7 +93,7 @@ impl Default for Mutable {
     }
 }
 
-impl Mutable {
+impl Storage {
     /// Changes the [`help` description] of the [`prometheus`] `M`etric
     /// identified by its `name`.
     ///
@@ -119,7 +111,7 @@ impl Mutable {
     where
         M: metric::Bundled,
         <M as metric::Bundled>::Bundle: Clone,
-        Self: GetCollection<<M as metric::Bundled>::Bundle>,
+        Self: super::Get<Collection<<M as metric::Bundled>::Bundle>>,
     {
         // PANIC: `RwLock` usage is fully panic-safe here.
         #![allow(
@@ -128,18 +120,19 @@ impl Mutable {
             clippy::unwrap_used
         )]
 
-        // We do `.clone()` here intentionally to release `.read()` lock.
-        let metric_opt = self.collection().read().unwrap().get(name).cloned();
+        use super::Get as _;
 
-        if let Some(metric) = metric_opt {
+        let read_storage = self.collection().read().unwrap();
+        if let Some(metric) = read_storage.get(name) {
             metric.description.store(Arc::new(description));
         } else {
-            let mut storage = self.collection().write().unwrap();
+            drop(read_storage);
+            let mut write_storage = self.collection().write().unwrap();
 
-            if let Some(metric) = storage.get(name) {
+            if let Some(metric) = write_storage.get(name) {
                 metric.description.store(Arc::new(description));
             } else {
-                drop(storage.insert(
+                drop(write_storage.insert(
                     name.into(),
                     metric::Describable::only_description(description),
                 ));
@@ -172,7 +165,7 @@ impl Mutable {
             + Clone
             + TryFrom<&'k metrics::Key, Error = prometheus::Error>
             + 'static,
-        Self: GetCollection<<M as metric::Bundled>::Bundle>,
+        Self: super::Get<Collection<<M as metric::Bundled>::Bundle>>,
     {
         // PANIC: `RwLock` usage is panic-safe here (considering the
         //        `prometheus::Registry::register()` does not).
@@ -182,6 +175,7 @@ impl Mutable {
             clippy::unwrap_used
         )]
 
+        use super::Get as _;
         use metric::Bundle as _;
 
         let name = key.name();
@@ -243,7 +237,7 @@ impl Mutable {
         M: metric::Bundled + prometheus::core::Collector,
         <M as metric::Bundled>::Bundle:
             prometheus::core::Collector + Clone + 'static,
-        Self: GetCollection<<M as metric::Bundled>::Bundle>,
+        Self: super::Get<Collection<<M as metric::Bundled>::Bundle>>,
     {
         // PANIC: `RwLock` usage is panic-safe here (considering the
         //        `prometheus::Registry::register()` does not).
@@ -252,6 +246,8 @@ impl Mutable {
             clippy::unwrap_in_result,
             clippy::unwrap_used
         )]
+
+        use super::Get as _;
 
         let name = metric
             .desc()
@@ -274,7 +270,7 @@ impl Mutable {
     }
 }
 
-impl metrics_util::registry::Storage<metrics::Key> for Mutable {
+impl metrics_util::registry::Storage<metrics::Key> for Storage {
     // PANIC: We cannot panic inside `metrics_util::registry::Storage`
     //        implementation, because it will poison locks used inside
     //        `metrics_util::registry::Registry`. That's why we should pass
