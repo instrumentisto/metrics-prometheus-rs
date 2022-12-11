@@ -738,8 +738,8 @@ impl<S, L> Builder<S, L> {
     ///
     /// let res = metrics_prometheus::Recorder::builder()
     ///     .with_registry(&custom)
-    ///     .try_with_metric(prometheus::IntCounter::new("count", "help")?)?
-    ///     .try_with_metric(prometheus::Gauge::new("value", "help")?)?
+    ///     .with_metric(prometheus::IntCounter::new("count", "help")?)
+    ///     .with_metric(prometheus::Gauge::new("value", "help")?)
     ///     .with_failure_strategy(strategy::Panic)
     ///     .with_layer(FilterLayer::from_patterns(["ignored"]))
     ///     .try_build_and_install();
@@ -823,6 +823,66 @@ impl<S, L> Builder<S, L> {
         Ok(rec)
     }
 
+    /// Builds a [`FrozenRecorder`] out of this [`Builder`] and tries to install
+    /// it as [`metrics::recorder()`].
+    ///
+    /// Returns the [`prometheus::Registry`] backing the installed
+    /// [`FrozenRecorder`], as there is nothing you can configure with the
+    /// installed [`FrozenRecorder`] itself. For usage as [`metrics::Recorder`],
+    /// get it via [`metrics::recorder()`] directly.
+    ///
+    /// # Errors
+    ///
+    /// If the built [`FrozenRecorder`] fails to be installed as
+    /// [`metrics::recorder()`].
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use metrics_prometheus::{failure::strategy, recorder};
+    /// use metrics_util::layers::FilterLayer;
+    ///
+    /// let custom = prometheus::Registry::new_custom(Some("my".into()), None)?;
+    ///
+    /// let res = metrics_prometheus::Recorder::builder()
+    ///     .with_registry(&custom)
+    ///     .with_metric(prometheus::IntCounter::new("count", "help")?)
+    ///     .with_metric(prometheus::Gauge::new("value", "help")?)
+    ///     .with_metric(prometheus::Gauge::new("ignored_value", "help")?)
+    ///     .with_failure_strategy(strategy::Panic)
+    ///     .with_layer(FilterLayer::from_patterns(["ignored"]))
+    ///     .try_build_frozen_and_install();
+    /// assert!(
+    ///     res.is_ok(),
+    ///     "cannot install `FrozenRecorder`: {}",
+    ///     res.unwrap_err(),
+    /// );
+    ///
+    /// metrics::increment_counter!("count");
+    /// metrics::increment_gauge!("value", 3.0);
+    /// metrics::increment_gauge!("ignored_value", 1.0);
+    ///
+    /// let report =
+    ///     prometheus::TextEncoder::new().encode_to_string(&custom.gather())?;
+    /// assert_eq!(
+    ///     report.trim(),
+    ///     r#"
+    /// ## HELP my_count help
+    /// ## TYPE my_count counter
+    /// my_count 1
+    /// ## HELP my_ignored_value help
+    /// ## TYPE my_ignored_value gauge
+    /// my_ignored_value 0
+    /// ## HELP my_value help
+    /// ## TYPE my_value gauge
+    /// my_value 3
+    ///     "#
+    ///     .trim(),
+    /// );
+    /// # Ok::<_, prometheus::Error>(())
+    /// ```
+    ///
+    /// [`FrozenRecorder`]: Frozen
     pub fn try_build_frozen_and_install(
         self,
     ) -> Result<prometheus::Registry, metrics::SetRecorderError>
@@ -856,8 +916,8 @@ impl<S, L> Builder<S, L> {
     ///
     /// let recorder = metrics_prometheus::Recorder::builder()
     ///     .with_registry(custom)
-    ///     .try_with_metric(prometheus::IntCounter::new("count", "help")?)?
-    ///     .try_with_metric(prometheus::Gauge::new("value", "help")?)?
+    ///     .with_metric(prometheus::IntCounter::new("count", "help")?)
+    ///     .with_metric(prometheus::Gauge::new("value", "help")?)
     ///     .with_failure_strategy(strategy::Panic)
     ///     .with_layer(FilterLayer::from_patterns(["ignored"]))
     ///     .build_and_install();
@@ -928,6 +988,61 @@ impl<S, L> Builder<S, L> {
         })
     }
 
+    /// Builds a [`FrozenRecorder`] out of this [`Builder`] and installs it as
+    /// [`metrics::recorder()`].
+    ///
+    /// Returns the [`prometheus::Registry`] backing the installed
+    /// [`FrozenRecorder`], as there is nothing you can configure with the
+    /// installed [`FrozenRecorder`] itself. For usage as [`metrics::Recorder`],
+    /// get it via [`metrics::recorder()`] directly.
+    ///
+    /// # Panics
+    ///
+    /// If the built [`FrozenRecorder`] fails to be installed as
+    /// [`metrics::recorder()`].
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use metrics_prometheus::{failure::strategy, recorder};
+    /// use metrics_util::layers::FilterLayer;
+    ///
+    /// let custom = prometheus::Registry::new_custom(Some("my".into()), None)?;
+    ///
+    /// metrics_prometheus::Recorder::builder()
+    ///     .with_registry(&custom)
+    ///     .with_metric(prometheus::IntCounter::new("count", "help")?)
+    ///     .with_metric(prometheus::Gauge::new("value", "help")?)
+    ///     .with_metric(prometheus::Gauge::new("ignored_value", "help")?)
+    ///     .with_failure_strategy(strategy::Panic)
+    ///     .with_layer(FilterLayer::from_patterns(["ignored"]))
+    ///     .build_frozen_and_install();
+    ///
+    /// metrics::increment_counter!("count");
+    /// metrics::increment_gauge!("value", 3.0);
+    /// metrics::increment_gauge!("ignored_value", 1.0);
+    ///
+    /// let report =
+    ///     prometheus::TextEncoder::new().encode_to_string(&custom.gather())?;
+    /// assert_eq!(
+    ///     report.trim(),
+    ///     r#"
+    /// ## HELP my_count help
+    /// ## TYPE my_count counter
+    /// my_count 1
+    /// ## HELP my_ignored_value help
+    /// ## TYPE my_ignored_value gauge
+    /// my_ignored_value 0
+    /// ## HELP my_value help
+    /// ## TYPE my_value gauge
+    /// my_value 3
+    ///     "#
+    ///     .trim(),
+    /// );
+    /// # Ok::<_, prometheus::Error>(())
+    /// ```
+    ///
+    /// [`FrozenRecorder`]: Frozen
     pub fn build_frozen_and_install(self) -> prometheus::Registry
     where
         S: failure::Strategy + Clone,
