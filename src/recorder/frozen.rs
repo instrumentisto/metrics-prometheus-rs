@@ -13,14 +13,14 @@ use super::Builder;
 /// [`prometheus::Registry`], but not to register new ones, and is built on top
 /// of a [`storage::Immutable`].
 ///
-/// Though this [`Recorder`] is not capable of registering new metrics in its
-/// [`prometheus::Registry`] on the fly, it still does allow changing the
+/// Though this [`FrozenRecorder`] is not capable of registering new metrics in
+/// its [`prometheus::Registry`] on the fly, it still does allow changing the
 /// [`help` description] of already registered ones. By default, the
 /// [`prometheus::default_registry()`] is used.
 ///
-/// The only way to register metrics in this [`Recorder`] is to specify them via
-/// [`Builder::with_metric()`]/[`Builder::try_with_metric()`] APIs, before the
-/// [`Recorder`] is built.
+/// The only way to register metrics in this [`FrozenRecorder`] is to specify
+/// them via [`Builder::with_metric()`]/[`Builder::try_with_metric()`] APIs,
+/// before the [`FrozenRecorder`] is built.
 ///
 /// # Example
 ///
@@ -81,7 +81,7 @@ use super::Builder;
 /// metrics::describe_gauge!("value", "Example of gauge.");
 ///
 /// let report = prometheus::TextEncoder::new()
-///     .encode_to_string(&registry.gather())?;
+///     .encode_to_string(&prometheus::default_registry().gather())?;
 /// assert_eq!(
 ///     report.trim(),
 ///     r#"
@@ -101,8 +101,9 @@ use super::Builder;
 ///
 /// # Performance
 ///
-/// This [`Recorder`] provides the smallest overhead of accessing an already
-/// registered metric: just a regular [`HashMap`] lookup plus [`Arc`] cloning.
+/// This [`FrozenRecorder`] provides the smallest overhead of accessing an
+/// already registered metric: just a regular [`HashMap`] lookup plus [`Arc`]
+/// cloning.
 ///
 /// # Errors
 ///
@@ -111,11 +112,11 @@ use super::Builder;
 /// [`prometheus`] metrics via [`metrics`] crate will inevitably lead to a
 /// [`prometheus::Registry`] returning a [`prometheus::Error`], which can be
 /// either turned into a panic, or just silently ignored, making this
-/// [`Recorder`] to return a no-op metric instead (see
+/// [`FrozenRecorder`] to return a no-op metric instead (see
 /// [`metrics::Counter::noop()`] for example).
 ///
 /// The desired behavior can be specified with a [`failure::Strategy`]
-/// implementation of this [`Recorder`]. By default a
+/// implementation of this [`FrozenRecorder`]. By default a
 /// [`PanicInDebugNoOpInRelease`] [`failure::Strategy`] is used. See
 /// [`failure::strategy`] module for other available [`failure::Strategy`]s, or
 /// provide your own one by implementing the [`failure::Strategy`] trait.
@@ -134,6 +135,7 @@ use super::Builder;
 /// # Ok::<_, prometheus::Error>(())
 /// ```
 ///
+/// [`FrozenRecorder`]: Recorder`
 /// [`HashMap`]: std::collections::HashMap
 /// [`help` description]: prometheus::proto::MetricFamily::get_help
 #[derive(Debug)]
@@ -148,8 +150,10 @@ pub struct Recorder<FailureStrategy = PanicInDebugNoOpInRelease> {
 }
 
 impl Recorder {
-    /// Starts building a new [`Recorder`] on top of the
+    /// Starts building a new [`FrozenRecorder`] on top of the
     /// [`prometheus::default_registry()`].
+    ///
+    /// [`FrozenRecorder`]: Recorder
     pub fn builder() -> Builder {
         super::Recorder::builder()
     }
