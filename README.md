@@ -36,6 +36,11 @@ If you're not obligated to deal with [`prometheus`] crate directly or via third-
 
 This crate provides a [`metrics::Recorder`] implementation, allowing to work with a [`prometheus::Registry`] via [`metrics`] facade.
 
+It comes in 3 flavours, allowing to choose the smallest performance overhead depending on a use case:
+- Regular [`Recorder`], allowing to create new metrics via [`metrics`] facade anytime, without limits. Provides the same overhead of accessing an already registered metric as a [`metrics::Registry`] does: [`read`-lock] on a sharded [`HashMap`] plus [`Arc`] cloning.
+- [`FrozenRecorder`], unable to create new metrics via [`metrics`] facade at all (just no-op in such case). Provides the smallest overhead of accessing an already registered metric: just a regular [`HashMap`] lookup plus [`Arc`] cloning.
+- [`FreezableRecorder`], acting the same way as the [`Recorder`] at first, but being able to [`.freeze()`] and so, becoming a [`FrozenRecorder`] at the end. The overhead of accessing an already registered metric is the same as [`Recorder`] and [`FrozenRecorder`] provide, plus [`AtomicBool`] loading to check whether it has been [`.freeze()`]d.
+
 Not any [`prometheus`] metric is supported, because [`metrics`] crate implies only few of them. This is how the [`metrics`] crate's metrics are mapped onto [`prometheus`] ones:
 - [`metrics::Counter`]: [`prometheus::IntCounter`] + [`prometheus::IntCounterVec`]
 - [`metrics::Gauge`]: [`prometheus::Gauge`] + [`prometheus::GaugeVec`]
@@ -220,10 +225,16 @@ This software is subject to the terms of the [Blue Oak Model License 1.0.0](http
 
 
 
+[`.freeze()`]: https://docs.rs/metrics-prometheus/latest/metrics_prometheus/struct.FreezableRecorder.html#method.freeze
+[`Arc`]: https://doc.rust-lang.org/stable/std/sync/struct.Arc.html
 [`arc-swap`]: https://docs.rs/arc-swap
+[`AtomicBool`]: https://doc.rust-lang.org/stable/std/sync/atomic/struct.AtomicBool.html
 [`Describable`]: https://docs.rs/metrics-prometheus/latest/metrics_prometheus/metric/struct.Describable.html
 [`failure::strategy`]: https://docs.rs/metrics-prometheus/latest/metrics_prometheus/failure/strategy/index.html
 [`failure::Strategy`]: https://docs.rs/metrics-prometheus/latest/metrics_prometheus/failure/trait.Strategy.html
+[`FreezableRecorder`]: https://docs.rs/metrics-prometheus/latest/metrics_prometheus/struct.FreezableRecorder.html
+[`FrozenRecorder`]: https://docs.rs/metrics-prometheus/latest/metrics_prometheus/struct.FrozenRecorder.html
+[`HashMap`]: https://doc.rust-lang.org/stable/std/collections/struct.HashMap.html
 [`log`]: https://docs.rs/log
 [`metrics`]: https://docs.rs/metrics
 [`metrics::Counter`]: https://docs.rs/metrics/latest/metrics/struct.Counter.html
@@ -231,6 +242,7 @@ This software is subject to the terms of the [Blue Oak Model License 1.0.0](http
 [`metrics::Gauge`]: https://docs.rs/metrics/latest/metrics/struct.Gauge.html
 [`metrics::Histogram`]: https://docs.rs/metrics/latest/metrics/struct.Histogram.html
 [`metrics::Recorder`]: https://docs.rs/metrics/latest/metrics/trait.Recorder.html
+[`metrics::Registry`]: https://docs.rs/metrics-util/latest/metrics_util/registry/struct.Registry.html
 [`metrics::Unit`]: https://docs.rs/metrics/latest/metrics/enum.Unit.html
 [`metrics-exporter-prometheus`]: https://docs.rs/metrics-exporter-prometheus
 [`metrics-tracing-context`]: https://docs.rs/metrics-tracing-context
@@ -245,7 +257,8 @@ This software is subject to the terms of the [Blue Oak Model License 1.0.0](http
 [`prometheus::IntCounterVec`]: https://docs.rs/prometheus/latest/prometheus/type.IntCounterVec.html
 [`prometheus::MetricVec`]: https://docs.rs/prometheus/latest/prometheus/core/struct.MetricVec.html
 [`prometheus::Registry`]: https://docs.rs/prometheus/latest/prometheus/struct.Registry.html
-[`Recorder`]: https://docs.rs/metrics-prometheus/latest/metrics_prometheus/failure/struct.Recorder.html
+[`read`-lock]: https://doc.rust-lang.org/stable/std/sync/struct.RwLock.html#method.read
+[`Recorder`]: https://docs.rs/metrics-prometheus/latest/metrics_prometheus/struct.Recorder.html
 [`tracing`]: https://docs.rs/tracing
 [Prometheus]: https://prometheus.io
 [Rust]: https://www.rust-lang.org

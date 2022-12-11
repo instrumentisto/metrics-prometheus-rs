@@ -15,7 +15,14 @@ All user visible changes to this project will be documented in this file. This p
 
 - Switched functions naming convention from `must_*` for panicking to `try_*` for fallible. ([#1])
 
+### Added
+
+- `storage::Immutable` allow fast access to already registered metrics. ([#2])
+- `FrozenRecorder` implementation of `metrics::Recorder` allowing access already registered metrics fast, but unable to register new ones on the fly. ([#2])
+- `FreezableRecorder` implementation of `metrics::Recorder`, uniting both `Recorder` and `FrozenRecorder` ones. ([#2])
+
 [#1]: /../../pull/1
+[#2]: /../../pull/2
 
 
 

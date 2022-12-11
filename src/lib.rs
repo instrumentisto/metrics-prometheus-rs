@@ -1,15 +1,22 @@
 // These links overwrite the ones in `README.md`
 // to become proper intra-doc links in Rust docs.
+//! [`.freeze()`]: FreezableRecorder::freeze()
+//! [`Arc`]: std::sync::Arc
 //! [`arc-swap`]: arc_swap
+//! [`AtomicBool`]: std::sync::atomic::AtomicBool
 //! [`Describable`]: metric::Describable
 //! [`failure::strategy`]: failure::strategy
 //! [`failure::Strategy`]: failure::Strategy
+//! [`FreezableRecorder`]: FreezableRecorder
+//! [`FrozenRecorder`]: FrozenRecorder
+//! [`HashMap`]: std::collections::HashMap
 //! [`metrics`]: metrics
 //! [`metrics::Counter`]: metrics::Counter
 //! [`metrics::Counter::noop()`]: metrics::Counter::noop()
 //! [`metrics::Gauge`]: metrics::Gauge
 //! [`metrics::Histogram`]: metrics::Histogram
 //! [`metrics::Recorder`]: metrics::Recorder
+//! [`metrics::Registry`]: metrics_util::registry::Registry
 //! [`metrics::Unit`]: metrics::Unit
 //! [`PanicInDebugNoOpInRelease`]: failure::strategy::PanicInDebugNoOpInRelease
 //! [`prometheus`]: prometheus
@@ -22,6 +29,7 @@
 //! [`prometheus::IntCounterVec`]: prometheus::IntCounterVec
 //! [`prometheus::MetricVec`]: prometheus::core::MetricVec
 //! [`prometheus::Registry`]: prometheus::Registry
+//! [`read`-lock]: std::sync::RwLock::read()
 //! [`Recorder`]: Recorder
 #![doc = include_str!("../README.md")]
 #![doc(
