@@ -49,6 +49,7 @@ impl<H, T> Stack<H, T> {
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<R, H, T> Layer<R> for Stack<H, T>
 where
     H: Layer<<T as Layer<R>>::Output>,

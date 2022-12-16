@@ -44,6 +44,7 @@ impl<M> AsMut<M> for Metric<M> {
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl metrics::CounterFn for Metric<prometheus::IntCounter> {
     fn increment(&self, val: u64) {
         self.0.inc_by(val);
@@ -64,6 +65,7 @@ impl metrics::CounterFn for Metric<prometheus::IntCounter> {
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl metrics::GaugeFn for Metric<prometheus::Gauge> {
     fn increment(&self, val: f64) {
         self.0.add(val);
@@ -78,6 +80,7 @@ impl metrics::GaugeFn for Metric<prometheus::Gauge> {
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl metrics::HistogramFn for Metric<prometheus::Histogram> {
     fn record(&self, val: f64) {
         self.0.observe(val);
@@ -122,6 +125,7 @@ impl<M> Fallible<M> {
 
 // Not really used, only implemented to satisfy
 // `metrics_util::registry::Storage` requirements for stored items.
+#[warn(clippy::missing_trait_methods)]
 impl<M> metrics::CounterFn for Fallible<M>
 where
     Metric<M>: metrics::CounterFn,
@@ -141,6 +145,7 @@ where
 
 // Not really used, only implemented to satisfy
 // `metrics_util::registry::Storage` requirements for stored items.
+#[warn(clippy::missing_trait_methods)]
 impl<M> metrics::GaugeFn for Fallible<M>
 where
     Metric<M>: metrics::GaugeFn,
@@ -166,6 +171,7 @@ where
 
 // Not really used, only implemented to satisfy
 // `metrics_util::registry::Storage` requirements for stored items.
+#[warn(clippy::missing_trait_methods)]
 impl<M> metrics::HistogramFn for Fallible<M>
 where
     Metric<M>: metrics::HistogramFn,
@@ -234,6 +240,7 @@ impl<M> Describable<Option<M>> {
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<M> prometheus::core::Collector for Describable<M>
 where
     M: prometheus::core::Collector,
@@ -433,6 +440,7 @@ pub mod bundle {
         Vec(Vec),
     }
 
+    #[warn(clippy::missing_trait_methods)]
     impl<S, V> prometheus::core::Collector for Either<S, V>
     where
         S: prometheus::core::Collector,

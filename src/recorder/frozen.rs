@@ -159,6 +159,7 @@ impl Recorder {
     }
 }
 
+#[warn(clippy::missing_trait_methods)]
 impl<S> metrics::Recorder for Recorder<S>
 where
     S: failure::Strategy,
