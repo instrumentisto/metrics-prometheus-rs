@@ -720,6 +720,52 @@ impl<S, L> Builder<S, L> {
         })
     }
 
+    /// Builds a [`Recorder`] out of this [`Builder`].
+    pub fn build(self) -> <L as Layer<Recorder<S>>>::Output
+    where
+        S: failure::Strategy,
+        L: Layer<Recorder<S>>,
+    {
+        let Self { storage, failure_strategy, layers } = self;
+        let rec = Recorder {
+            metrics: Arc::new(metrics_util::registry::Registry::new(
+                storage.clone(),
+            )),
+            storage,
+            failure_strategy,
+        };
+        layers.layer(rec)
+    }
+
+    /// Builds a [`FreezableRecorder`] out of this [`Builder`].
+    pub fn build_freezable(self) -> <L as Layer<freezable::Recorder<S>>>::Output
+    where
+        S: failure::Strategy,
+        L: Layer<freezable::Recorder<S>>,
+    {
+        let Self { storage, failure_strategy, layers } = self;
+        let rec = freezable::Recorder::wrap(Recorder {
+            metrics: Arc::new(metrics_util::registry::Registry::new(
+                storage.clone(),
+            )),
+            storage,
+            failure_strategy,
+        });
+        layers.layer(rec)
+    }
+
+    /// Builds a [`FrozenRecorder`] out of this [`Builder`].
+    pub fn build_frozen(self) -> <L as Layer<frozen::Recorder<S>>>::Output
+    where
+        S: failure::Strategy,
+        L: Layer<frozen::Recorder<S>>,
+    {
+        let Self { storage, failure_strategy, layers } = self;
+        let rec =
+            frozen::Recorder { storage: (&storage).into(), failure_strategy };
+        layers.layer(rec)
+    }
+
     /// Builds a [`Recorder`] out of this [`Builder`] and tries to install it as
     /// [`metrics::recorder()`].
     ///
