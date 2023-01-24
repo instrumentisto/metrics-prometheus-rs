@@ -6,6 +6,20 @@ All user visible changes to this project will be documented in this file. This p
 
 
 
+## [0.3.1] · 2023-01-??
+[0.3.1]: /../../tree/v0.3.1
+
+[Diff](/../../compare/v0.3.0...v0.3.1)
+
+### Added
+
+- `recorder::Builder::build()`, `recorder::Builder::build_freezable()` and `recorder::Builder::build_frozen()` methods. ([#4])
+
+[#3]: /../../pull/4
+
+
+
+
 ## [0.3.0] · 2022-12-11
 [0.3.0]: /../../tree/v0.3.0
 
