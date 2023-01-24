@@ -738,6 +738,8 @@ impl<S, L> Builder<S, L> {
     }
 
     /// Builds a [`FreezableRecorder`] out of this [`Builder`].
+    ///
+    /// [`FreezableRecorder`]: Freezable
     pub fn build_freezable(self) -> <L as Layer<freezable::Recorder<S>>>::Output
     where
         S: failure::Strategy,
@@ -755,6 +757,8 @@ impl<S, L> Builder<S, L> {
     }
 
     /// Builds a [`FrozenRecorder`] out of this [`Builder`].
+    ///
+    /// [`FrozenRecorder`]: Frozen
     pub fn build_frozen(self) -> <L as Layer<frozen::Recorder<S>>>::Output
     where
         S: failure::Strategy,
