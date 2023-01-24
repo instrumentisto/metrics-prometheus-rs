@@ -720,7 +720,23 @@ impl<S, L> Builder<S, L> {
         })
     }
 
-    /// Builds a [`Recorder`] out of this [`Builder`].
+    /// Builds a [`Recorder`] out of this [`Builder`] and returns it being
+    /// wrapped into all the provided [`metrics::Layer`]s.
+    ///
+    /// # Usage
+    ///
+    /// Use this method if you want to:
+    /// - either install the built [`Recorder`] as [`metrics::recorder()`]
+    ///   manually;
+    /// - or to compose the built [`Recorder`] with some other
+    ///   [`metric::Recorder`]s (like being able to write into multiple
+    ///   [`prometheus::Registry`]s via [`metrics::layer::Fanout`], for
+    ///   example).
+    ///
+    /// Otherwise, consider using the [`build_and_install()`] method instead.
+    ///
+    /// [`build_and_install()`]: Builder::build_and_install
+    /// [`metrics::layer::Fanout`]: metrics_util::layers::Fanout
     pub fn build(self) -> <L as Layer<Recorder<S>>>::Output
     where
         S: failure::Strategy,
@@ -737,8 +753,24 @@ impl<S, L> Builder<S, L> {
         layers.layer(rec)
     }
 
-    /// Builds a [`FreezableRecorder`] out of this [`Builder`].
+    /// Builds a [`FreezableRecorder`] out of this [`Builder`] and returns it
+    /// being wrapped into all the provided [`metrics::Layer`]s.
     ///
+    /// # Usage
+    ///
+    /// Use this method if you want to:
+    /// - either install the built [`FreezableRecorder`] as
+    ///   [`metrics::recorder()`] manually;
+    /// - or to compose the built [`FreezableRecorder`] with some other
+    ///   [`metric::Recorder`]s (like being able to write into multiple
+    ///   [`prometheus::Registry`]s via [`metrics::layer::Fanout`], for
+    ///   example).
+    ///
+    /// Otherwise, consider using the [`build_freezable_and_install()`] method
+    /// instead.
+    ///
+    /// [`build_freezable_and_install()`]: Builder::build_freezable_and_install
+    /// [`metrics::layer::Fanout`]: metrics_util::layers::Fanout
     /// [`FreezableRecorder`]: Freezable
     pub fn build_freezable(self) -> <L as Layer<freezable::Recorder<S>>>::Output
     where
@@ -756,8 +788,24 @@ impl<S, L> Builder<S, L> {
         layers.layer(rec)
     }
 
-    /// Builds a [`FrozenRecorder`] out of this [`Builder`].
+    /// Builds a [`FrozenRecorder`] out of this [`Builder`] and returns it being
+    /// wrapped into all the provided [`metrics::Layer`]s.
     ///
+    /// # Usage
+    ///
+    /// Use this method if you want to:
+    /// - either install the built [`FrozenRecorder`] as [`metrics::recorder()`]
+    ///   manually;
+    /// - or to compose the built [`FrozenRecorder`] with some other
+    ///   [`metric::Recorder`]s (like being able to write into multiple
+    ///   [`prometheus::Registry`]s via [`metrics::layer::Fanout`], for
+    ///   example).
+    ///
+    /// Otherwise, consider using the [`build_frozen_and_install()`] method
+    /// instead.
+    ///
+    /// [`build_frozen_and_install()`]: Builder::build_frozen_and_install
+    /// [`metrics::layer::Fanout`]: metrics_util::layers::Fanout
     /// [`FrozenRecorder`]: Frozen
     pub fn build_frozen(self) -> <L as Layer<frozen::Recorder<S>>>::Output
     where

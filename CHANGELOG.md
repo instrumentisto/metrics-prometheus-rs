@@ -13,7 +13,7 @@ All user visible changes to this project will be documented in this file. This p
 
 ### Added
 
-- `recorder::Builder::build()`, `recorder::Builder::build_freezable()` and `recorder::Builder::build_frozen()` methods. ([#4])
+- `build()`, `build_freezable()` and `build_frozen()` methods to `recorder::Builder`, allowing to build the resulting `metrics::Recorder` without installing it as `metrics::recorder()`. ([#4])
 
 [#3]: /../../pull/4
 
