@@ -729,7 +729,7 @@ impl<S, L> Builder<S, L> {
     /// - either install the built [`Recorder`] as [`metrics::recorder()`]
     ///   manually;
     /// - or to compose the built [`Recorder`] with some other
-    ///   [`metric::Recorder`]s (like being able to write into multiple
+    ///   [`metrics::Recorder`]s (like being able to write into multiple
     ///   [`prometheus::Registry`]s via [`metrics::layer::Fanout`], for
     ///   example).
     ///
@@ -762,7 +762,7 @@ impl<S, L> Builder<S, L> {
     /// - either install the built [`FreezableRecorder`] as
     ///   [`metrics::recorder()`] manually;
     /// - or to compose the built [`FreezableRecorder`] with some other
-    ///   [`metric::Recorder`]s (like being able to write into multiple
+    ///   [`metrics::Recorder`]s (like being able to write into multiple
     ///   [`prometheus::Registry`]s via [`metrics::layer::Fanout`], for
     ///   example).
     ///
@@ -797,7 +797,7 @@ impl<S, L> Builder<S, L> {
     /// - either install the built [`FrozenRecorder`] as [`metrics::recorder()`]
     ///   manually;
     /// - or to compose the built [`FrozenRecorder`] with some other
-    ///   [`metric::Recorder`]s (like being able to write into multiple
+    ///   [`metrics::Recorder`]s (like being able to write into multiple
     ///   [`prometheus::Registry`]s via [`metrics::layer::Fanout`], for
     ///   example).
     ///
