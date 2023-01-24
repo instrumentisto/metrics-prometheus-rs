@@ -737,6 +737,7 @@ impl<S, L> Builder<S, L> {
     ///
     /// [`build_and_install()`]: Builder::build_and_install
     /// [`metrics::layer::Fanout`]: metrics_util::layers::Fanout
+    /// [`metrics::Layer`]: Layer
     pub fn build(self) -> <L as Layer<Recorder<S>>>::Output
     where
         S: failure::Strategy,
@@ -771,6 +772,7 @@ impl<S, L> Builder<S, L> {
     ///
     /// [`build_freezable_and_install()`]: Builder::build_freezable_and_install
     /// [`metrics::layer::Fanout`]: metrics_util::layers::Fanout
+    /// [`metrics::Layer`]: Layer
     /// [`FreezableRecorder`]: Freezable
     pub fn build_freezable(self) -> <L as Layer<freezable::Recorder<S>>>::Output
     where
@@ -806,6 +808,7 @@ impl<S, L> Builder<S, L> {
     ///
     /// [`build_frozen_and_install()`]: Builder::build_frozen_and_install
     /// [`metrics::layer::Fanout`]: metrics_util::layers::Fanout
+    /// [`metrics::Layer`]: Layer
     /// [`FrozenRecorder`]: Frozen
     pub fn build_frozen(self) -> <L as Layer<frozen::Recorder<S>>>::Output
     where
