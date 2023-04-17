@@ -6,6 +6,22 @@ All user visible changes to this project will be documented in this file. This p
 
 
 
+## [0.4.0] · 2023-04-17
+[0.4.0]: /../../tree/v0.4.0
+
+[Diff](/../../compare/v0.3.1...v0.4.0)
+
+### BC Breaks
+
+- Upgraded to 0.21 version of `metrics` crate. ([#5])
+- Upgraded to 0.15 version of `metrics-util` crate. ([#5], [#6])
+
+[#5]: /../../pull/5
+[#6]: /../../pull/6
+
+
+
+
 ## [0.3.1] · 2023-01-24
 [0.3.1]: /../../tree/v0.3.1
 
@@ -15,7 +31,7 @@ All user visible changes to this project will be documented in this file. This p
 
 - `build()`, `build_freezable()` and `build_frozen()` methods to `recorder::Builder`, allowing to build the resulting `metrics::Recorder` without installing it as `metrics::recorder()`. ([#4])
 
-[#3]: /../../pull/4
+[#4]: /../../pull/4
 
 
 
