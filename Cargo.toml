@@ -28,4 +28,4 @@ smallvec = "1.10"
 thiserror = "1.0.2"
 
 [dev-dependencies]
-metrics-util = { version = "0.14", features = ["layer-filter"], default-features = false }
+metrics-util = { version = "0.15", features = ["layer-filter"], default-features = false }
