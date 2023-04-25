@@ -467,7 +467,7 @@ impl<S> Recorder<S> {
     where
         S: Clone,
     {
-        let _ = self.frozen.get_or_init(|| super::Frozen {
+        _ = self.frozen.get_or_init(|| super::Frozen {
             storage: (&self.usual.storage).into(),
             failure_strategy: self.usual.failure_strategy.clone(),
         });

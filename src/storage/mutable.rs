@@ -119,6 +119,8 @@ impl Storage {
             clippy::unwrap_in_result,
             clippy::unwrap_used
         )]
+        // Intentionally, see the comment below on a `write_storage`.
+        #![allow(clippy::significant_drop_tightening)]
 
         use super::Get as _;
 
@@ -127,6 +129,8 @@ impl Storage {
             metric.description.store(Arc::new(description));
         } else {
             drop(read_storage);
+            // We do intentionally hold here the `write_storage` lock till
+            // the end of the scope, to perform all the operations atomically.
             let mut write_storage = self.collection().write().unwrap();
 
             if let Some(metric) = write_storage.get(name) {
@@ -174,6 +178,8 @@ impl Storage {
             clippy::unwrap_in_result,
             clippy::unwrap_used
         )]
+        // Intentionally, see the comment below on a `storage`.
+        #![allow(clippy::significant_drop_tightening)]
 
         use super::Get as _;
         use metric::Bundle as _;
@@ -190,6 +196,8 @@ impl Storage {
         let bundle = if let Some(bundle) = bundle_opt {
             bundle
         } else {
+            // We do intentionally hold here the write lock on `storage` till
+            // the end of the scope, to perform all the operations atomically.
             let mut storage = self.collection().write().unwrap();
 
             bundle_opt = storage.get(name).and_then(|m| m.metric.clone());
@@ -246,6 +254,8 @@ impl Storage {
             clippy::unwrap_in_result,
             clippy::unwrap_used
         )]
+        // Intentionally, see the comment below on a `storage`.
+        #![allow(clippy::significant_drop_tightening)]
 
         use super::Get as _;
 
@@ -256,6 +266,9 @@ impl Storage {
             .unwrap_or_default();
         let entry = metric::Describable::wrap(Some(metric.into_bundle()));
 
+        // We do intentionally hold here the write lock on `storage` till
+        // the end of the scope, to perform the registration in
+        // `prometheus::Registry` exclusively.
         let mut storage = self.collection().write().unwrap();
         // We should register in `prometheus::Registry` before storing in our
         // `Collection`. This way `metrics::Recorder` implementations using this
