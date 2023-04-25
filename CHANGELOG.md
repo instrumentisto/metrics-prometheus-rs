@@ -6,6 +6,21 @@ All user visible changes to this project will be documented in this file. This p
 
 
 
+## [0.4.1] · 2023-04-25
+[0.4.1]: /../../tree/v0.4.1
+
+[Diff](/../../compare/v0.4.0...v0.4.1)
+
+### Changed
+
+- Updated to 0.5 version of `sealed` crate to fully get rid of `syn` 1.0. ([f923cb69], [#7])
+
+[f923cb69]: /../../commit/f923cb69553ee624213b7df179c95137134843e3
+[#7]: /../../pull/7
+
+
+
+
 ## [0.4.0] · 2023-04-17
 [0.4.0]: /../../tree/v0.4.0
 
