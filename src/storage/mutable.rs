@@ -208,7 +208,7 @@ impl Storage {
 
                 // This way we reuse existing `description` if it has been set
                 // before metric registration.
-                let mut entry = storage.entry(name.into()).or_default();
+                let entry = storage.entry(name.into()).or_default();
                 // We should register in `prometheus::Registry` before storing
                 // in our `Collection`. This way `metrics::Recorder`
                 // implementations using this `storage::Mutable` will be able to
