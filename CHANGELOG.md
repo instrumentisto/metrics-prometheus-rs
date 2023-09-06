@@ -6,6 +6,24 @@ All user visible changes to this project will be documented in this file. This p
 
 
 
+## [0.5.0] · 2023-09-06
+[0.5.0]: /../../tree/v0.5.0
+
+[Diff](/../../compare/v0.4.1...v0.5.0)
+
+### Changed
+
+- Relicensed from "[BlueOak-1.0.0]" as "[MIT] OR [Apache-2.0]". ([f982cbaa], [#8])
+
+[Apache-2.0]: /../../blob/v0.5.0/LICENSE-APACHE
+[BlueOak-1.0.0]: /../../blob/v0.4.1/LICENSE.md
+[MIT]: /../../blob/v0.5.0/LICENSE
+[f982cbaa]: /../../commit/f982cbaabcefb976e54159a9c758b19712b156ef
+[#8]: /../../pull/8
+
+
+
+
 ## [0.4.1] · 2023-04-25
 [0.4.1]: /../../tree/v0.4.1
 
