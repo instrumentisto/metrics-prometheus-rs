@@ -221,7 +221,9 @@ or provide your own one by implementing the [`failure::Strategy`] trait.
 
 Copyright © 2022-2023 Instrumentisto Team, <https://github.com/instrumentisto>
 
-This software is subject to the terms of the [Blue Oak Model License 1.0.0](https://github.com/instrumentisto/metrics-prometheus-rs/blob/main/LICENSE.md). If a copy of the [BlueOak-1.0.0](https://spdx.org/licenses/BlueOak-1.0.0.html) license was not distributed with this file, You can obtain one at <https://blueoakcouncil.org/license/1.0.0>.
+Licensed under either of [Apache License, Version 2.0][APACHE] or [MIT license][MIT] at your option.
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in this crate by you, as defined in the [Apache-2.0 license][APACHE], shall be dual licensed as above, without any additional terms or conditions.
 
 
 
@@ -264,3 +266,6 @@ This software is subject to the terms of the [Blue Oak Model License 1.0.0](http
 [Prometheus]: https://prometheus.io
 [Rust]: https://www.rust-lang.org
 [VictoriaMetrics]: https://victoriametrics.com
+
+[APACHE]: https://github.com/instrumentisto/metrics-prometheus-rs/blob/main/LICENSE-APACHE
+[MIT]: https://github.com/instrumentisto/metrics-prometheus-rs/blob/main/LICENSE-MIT

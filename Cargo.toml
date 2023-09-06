@@ -5,14 +5,14 @@ edition = "2021"
 rust-version = "1.65"
 description = "`prometheus` backend for `metrics` crate."
 authors = ["Instrumentisto Team <developer@instrumentisto.com>"]
-license = "BlueOak-1.0.0"
+license = "MIT OR Apache-2.0"
 documentation = "https://docs.rs/metrics-prometheus"
 homepage = "https://github.com/instrumentisto/metrics-prometheus-rs"
 repository = "https://github.com/instrumentisto/metrics-prometheus-rs"
 readme = "README.md"
 keywords = ["metrics", "prometheus"]
 categories = ["development-tools::debugging"]
-include = ["/src/", "/CHANGELOG.md", "/LICENSE.md", "/README.md"]
+include = ["/src/", "/CHANGELOG.md", "/LICENSE-APACHE", "/LICENSE-MIT", "/README.md"]
 
 [dependencies]
 arc-swap = "1.5"
