@@ -2,6 +2,12 @@
 # See full lints list at:
 # https://rust-lang.github.io/rust-clippy/master/index.html
 
+absolute-paths-allowed-crates = [
+    "metrics",
+    "metrics_util",
+    "prometheus",
+]
+
 standard-macro-braces = [
     { name = "assert", brace = "(" },
     { name = "assert_eq", brace = "(" },
