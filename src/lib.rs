@@ -191,22 +191,24 @@ pub use self::{
 };
 
 /// Tries to install a default [`Recorder`] (backed by the
-/// [`prometheus::default_registry()`]) with [`metrics::set_global_recorder()`].
+/// [`prometheus::default_registry()`]) with the
+/// [`metrics::set_global_recorder()`].
 ///
 /// # Errors
 ///
-/// If the [`Recorder`] fails to be installed with
+/// If the [`Recorder`] fails to be installed with the
 /// [`metrics::set_global_recorder()`].
 pub fn try_install() -> Result<Recorder, metrics::SetRecorderError<Recorder>> {
     Recorder::builder().try_build_and_install()
 }
 
 /// Tries to install a default [`FreezableRecorder`] (backed by the
-/// [`prometheus::default_registry()`]) with [`metrics::set_global_recorder()`].
+/// [`prometheus::default_registry()`]) with the
+/// [`metrics::set_global_recorder()`].
 ///
 /// # Errors
 ///
-/// If the [`FreezableRecorder`] fails to be installed with
+/// If the [`FreezableRecorder`] fails to be installed with the
 /// [`metrics::set_global_recorder()`].
 pub fn try_install_freezable(
 ) -> Result<FreezableRecorder, metrics::SetRecorderError<FreezableRecorder>> {
@@ -214,11 +216,12 @@ pub fn try_install_freezable(
 }
 
 /// Installs a default [`Recorder`] (backed by the
-/// [`prometheus::default_registry()`]) with [`metrics::set_global_recorder()`].
+/// [`prometheus::default_registry()`]) with the
+/// [`metrics::set_global_recorder()`].
 ///
 /// # Panics
 ///
-/// If the [`Recorder`] fails to be installed with
+/// If the [`Recorder`] fails to be installed with the
 /// [`metrics::set_global_recorder()`].
 // We do intentionally omit `#[must_use]` here, as we don't want to force
 // library users using the returned `Recorder` directly.
@@ -228,11 +231,12 @@ pub fn install() -> Recorder {
 }
 
 /// Installs a default [`FreezableRecorder`] (backed by the
-/// [`prometheus::default_registry()`]) with [`metrics::set_global_recorder()`].
+/// [`prometheus::default_registry()`]) with the
+/// [`metrics::set_global_recorder()`].
 ///
 /// # Panics
 ///
-/// If the [`FreezableRecorder`] fails to be installed with
+/// If the [`FreezableRecorder`] fails to be installed with the
 /// [`metrics::set_global_recorder()`].
 // We do intentionally omit `#[must_use]` here, as we don't want to force
 // library users using the returned `FreezableRecorder` directly.

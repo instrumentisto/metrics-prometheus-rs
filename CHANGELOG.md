@@ -16,7 +16,7 @@ All user visible changes to this project will be documented in this file. This p
 - Upgraded to 0.22 version of `metrics` crate. ([#9])
 - Upgraded to 0.16 version of `metrics-util` crate. ([#9])
 
-[#5]: /../../pull/9
+[#9]: /../../pull/9
 
 
 

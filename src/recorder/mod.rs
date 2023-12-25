@@ -512,7 +512,7 @@ pub struct Builder<
     failure_strategy: FailureStrategy,
 
     /// [`metrics::Layer`]s to wrap the built [`Recorder`] with upon its
-    /// installation with [`metrics::set_global_recorder()`].
+    /// installation with the [`metrics::set_global_recorder()`].
     ///
     /// [`metrics::Layer`]: Layer
     layers: Layers,
@@ -744,7 +744,7 @@ impl<S, L> Builder<S, L> {
     /// # Usage
     ///
     /// Use this method if you want to:
-    /// - either install the built [`Recorder`] with
+    /// - either install the built [`Recorder`] with the
     ///   [`metrics::set_global_recorder()`] manually;
     /// - or to compose the built [`Recorder`] with some other
     ///   [`metrics::Recorder`]s (like being able to write into multiple
@@ -778,7 +778,7 @@ impl<S, L> Builder<S, L> {
     /// # Usage
     ///
     /// Use this method if you want to:
-    /// - either install the built [`FreezableRecorder`] with
+    /// - either install the built [`FreezableRecorder`] with the
     ///   [`metrics::set_global_recorder()`] manually;
     /// - or to compose the built [`FreezableRecorder`] with some other
     ///   [`metrics::Recorder`]s (like being able to write into multiple
@@ -814,7 +814,7 @@ impl<S, L> Builder<S, L> {
     /// # Usage
     ///
     /// Use this method if you want to:
-    /// - either install the built [`FrozenRecorder`] with
+    /// - either install the built [`FrozenRecorder`] with the
     ///   [`metrics::set_global_recorder()`] manually;
     /// - or to compose the built [`FrozenRecorder`] with some other
     ///   [`metrics::Recorder`]s (like being able to write into multiple
@@ -840,11 +840,11 @@ impl<S, L> Builder<S, L> {
     }
 
     /// Builds a [`Recorder`] out of this [`Builder`] and tries to install it
-    /// with [`metrics::set_global_recorder()`].
+    /// with the [`metrics::set_global_recorder()`].
     ///
     /// # Errors
     ///
-    /// If the built [`Recorder`] fails to be installed with
+    /// If the built [`Recorder`] fails to be installed with the
     /// [`metrics::set_global_recorder()`].
     ///
     /// # Example
@@ -922,11 +922,11 @@ impl<S, L> Builder<S, L> {
     }
 
     /// Builds a [`FreezableRecorder`] out of this [`Builder`] and tries to
-    /// install it with [`metrics::set_global_recorder()`].
+    /// install it with the [`metrics::set_global_recorder()`].
     ///
     /// # Errors
     ///
-    /// If the built [`FreezableRecorder`] fails to be installed with
+    /// If the built [`FreezableRecorder`] fails to be installed with the
     /// [`metrics::set_global_recorder()`].
     ///
     /// # Example
@@ -997,7 +997,7 @@ impl<S, L> Builder<S, L> {
     }
 
     /// Builds a [`FrozenRecorder`] out of this [`Builder`] and tries to install
-    /// it with [`metrics::set_global_recorder()`].
+    /// it with the [`metrics::set_global_recorder()`].
     ///
     /// Returns the [`prometheus::Registry`] backing the installed
     /// [`FrozenRecorder`], as there is nothing you can configure with the
@@ -1005,7 +1005,7 @@ impl<S, L> Builder<S, L> {
     ///
     /// # Errors
     ///
-    /// If the built [`FrozenRecorder`] fails to be installed with
+    /// If the built [`FrozenRecorder`] fails to be installed with the
     /// [`metrics::set_global_recorder()`].
     ///
     /// # Example
@@ -1070,12 +1070,12 @@ impl<S, L> Builder<S, L> {
         Ok(storage.prometheus)
     }
 
-    /// Builds a [`Recorder`] out of this [`Builder`] and installs it with
+    /// Builds a [`Recorder`] out of this [`Builder`] and installs it with the
     /// [`metrics::set_global_recorder()`].
     ///
     /// # Panics
     ///
-    /// If the built [`Recorder`] fails to be installed with
+    /// If the built [`Recorder`] fails to be installed with the
     /// [`metrics::set_global_recorder()`].
     ///
     /// # Example
@@ -1146,11 +1146,11 @@ impl<S, L> Builder<S, L> {
     }
 
     /// Builds a [`FreezableRecorder`] out of this [`Builder`] and installs it
-    /// with [`metrics::set_global_recorder()`].
+    /// with the [`metrics::set_global_recorder()`].
     ///
     /// # Panics
     ///
-    /// If the built [`FreezableRecorder`] fails to be installed with
+    /// If the built [`FreezableRecorder`] fails to be installed with the
     /// [`metrics::set_global_recorder()`].
     ///
     /// # Example
@@ -1210,7 +1210,7 @@ impl<S, L> Builder<S, L> {
     }
 
     /// Builds a [`FrozenRecorder`] out of this [`Builder`] and installs it with
-    /// [`metrics::set_global_recorder()`].
+    /// the [`metrics::set_global_recorder()`].
     ///
     /// Returns the [`prometheus::Registry`] backing the installed
     /// [`FrozenRecorder`], as there is nothing you can configure with the
@@ -1218,7 +1218,7 @@ impl<S, L> Builder<S, L> {
     ///
     /// # Panics
     ///
-    /// If the built [`FrozenRecorder`] fails to be installed with
+    /// If the built [`FrozenRecorder`] fails to be installed with the
     /// [`metrics::set_global_recorder()`].
     ///
     /// # Example
@@ -1280,7 +1280,7 @@ impl<S, L> Builder<S, L> {
 
 impl<S, H, T> Builder<S, layer::Stack<H, T>> {
     /// Adds the provided [`metrics::Layer`] to wrap the built [`Recorder`] upon
-    /// its installation with [`metrics::set_global_recorder()`].
+    /// its installation with the [`metrics::set_global_recorder()`].
     ///
     /// # Example
     ///
