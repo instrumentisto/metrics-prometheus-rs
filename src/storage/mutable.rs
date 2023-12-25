@@ -222,7 +222,8 @@ impl Storage {
                 bundle
             }
         };
-        Ok(Arc::new(Metric::wrap(bundle.get_single_metric(key)?)))
+
+        bundle.get_single_metric(key).map(Metric::wrap).map(Arc::new)
     }
 
     /// Registers the provided [`prometheus`] `metric` in the underlying

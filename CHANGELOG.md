@@ -6,6 +6,21 @@ All user visible changes to this project will be documented in this file. This p
 
 
 
+## [0.6.0] · 2023-??-??
+[0.6.0]: /../../tree/v0.6.0
+
+[Diff](/../../compare/v0.5.0...v0.6.0)
+
+### BC Breaks
+
+- Upgraded to 0.22 version of `metrics` crate. ([#9])
+- Upgraded to 0.16 version of `metrics-util` crate. ([#9])
+
+[#9]: /../../pull/9
+
+
+
+
 ## [0.5.0] · 2023-09-06
 [0.5.0]: /../../tree/v0.5.0
 

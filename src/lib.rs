@@ -191,33 +191,38 @@ pub use self::{
 };
 
 /// Tries to install a default [`Recorder`] (backed by the
-/// [`prometheus::default_registry()`]) as [`metrics::recorder()`].
+/// [`prometheus::default_registry()`]) with the
+/// [`metrics::set_global_recorder()`].
 ///
 /// # Errors
 ///
-/// If the [`Recorder`] fails to be installed as [`metrics::recorder()`].
-pub fn try_install() -> Result<Recorder, metrics::SetRecorderError> {
+/// If the [`Recorder`] fails to be installed with the
+/// [`metrics::set_global_recorder()`].
+pub fn try_install() -> Result<Recorder, metrics::SetRecorderError<Recorder>> {
     Recorder::builder().try_build_and_install()
 }
 
 /// Tries to install a default [`FreezableRecorder`] (backed by the
-/// [`prometheus::default_registry()`]) as [`metrics::recorder()`].
+/// [`prometheus::default_registry()`]) with the
+/// [`metrics::set_global_recorder()`].
 ///
 /// # Errors
 ///
-/// If the [`FreezableRecorder`] fails to be installed as
-/// [`metrics::recorder()`].
+/// If the [`FreezableRecorder`] fails to be installed with the
+/// [`metrics::set_global_recorder()`].
 pub fn try_install_freezable(
-) -> Result<FreezableRecorder, metrics::SetRecorderError> {
+) -> Result<FreezableRecorder, metrics::SetRecorderError<FreezableRecorder>> {
     Recorder::builder().try_build_freezable_and_install()
 }
 
 /// Installs a default [`Recorder`] (backed by the
-/// [`prometheus::default_registry()`]) as [`metrics::recorder()`].
+/// [`prometheus::default_registry()`]) with the
+/// [`metrics::set_global_recorder()`].
 ///
 /// # Panics
 ///
-/// If the [`Recorder`] fails to be installed as [`metrics::recorder()`].
+/// If the [`Recorder`] fails to be installed with the
+/// [`metrics::set_global_recorder()`].
 // We do intentionally omit `#[must_use]` here, as we don't want to force
 // library users using the returned `Recorder` directly.
 #[allow(clippy::must_use_candidate)]
@@ -226,12 +231,13 @@ pub fn install() -> Recorder {
 }
 
 /// Installs a default [`FreezableRecorder`] (backed by the
-/// [`prometheus::default_registry()`]) as [`metrics::recorder()`].
+/// [`prometheus::default_registry()`]) with the
+/// [`metrics::set_global_recorder()`].
 ///
 /// # Panics
 ///
-/// If the [`FreezableRecorder`] fails to be installed as
-/// [`metrics::recorder()`].
+/// If the [`FreezableRecorder`] fails to be installed with the
+/// [`metrics::set_global_recorder()`].
 // We do intentionally omit `#[must_use]` here, as we don't want to force
 // library users using the returned `FreezableRecorder` directly.
 #[allow(clippy::must_use_candidate)]

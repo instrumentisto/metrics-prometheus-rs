@@ -28,9 +28,15 @@ pub use self::{freezable::Recorder as Freezable, frozen::Recorder as Frozen};
 /// let recorder = metrics_prometheus::install();
 ///
 /// // Either use `metrics` crate interfaces.
-/// metrics::increment_counter!("count", "whose" => "mine", "kind" => "owned");
-/// metrics::increment_counter!("count", "whose" => "mine", "kind" => "ref");
-/// metrics::increment_counter!("count", "kind" => "owned", "whose" => "dummy");
+/// metrics::counter!(
+///     "count", "whose" => "mine", "kind" => "owned",
+/// ).increment(1);
+/// metrics::counter!(
+///     "count", "whose" => "mine", "kind" => "ref",
+/// ).increment(1);
+/// metrics::counter!(
+///     "count", "kind" => "owned", "whose" => "dummy",
+/// ).increment(1);
 ///
 /// // Or construct and provide `prometheus` metrics directly.
 /// recorder.register_metric(prometheus::Gauge::new("value", "help")?);
@@ -79,7 +85,7 @@ pub use self::{freezable::Recorder as Freezable, frozen::Recorder as Frozen};
 ///
 /// // Even before a metric is registered in `prometheus::Registry`.
 /// metrics::describe_counter!("another", "Yet another counter.");
-/// metrics::increment_counter!("another");
+/// metrics::counter!("another").increment(1);
 ///
 /// let report = prometheus::TextEncoder::new()
 ///     .encode_to_string(&recorder.registry().gather())?;
@@ -133,9 +139,9 @@ pub use self::{freezable::Recorder as Freezable, frozen::Recorder as Frozen};
 ///     .with_failure_strategy(strategy::Panic)
 ///     .build_and_install();
 ///
-/// metrics::increment_counter!("count", "kind" => "owned");
+/// metrics::counter!("count", "kind" => "owned").increment(1);
 /// // This panics, as such labeling is not allowed by `prometheus` crate.
-/// metrics::increment_counter!("count", "whose" => "mine");
+/// metrics::counter!("count", "whose" => "mine").increment(1);
 /// ```
 ///
 /// [`HashMap`]: std::collections::HashMap
@@ -204,7 +210,7 @@ impl<S> Recorder<S> {
     /// recorder.registry().register(Box::new(counter))?;
     ///
     /// // panics: Duplicate metrics collector registration attempted
-    /// metrics::increment_counter!("value");
+    /// metrics::counter!("value").increment(1);
     /// # Ok::<_, prometheus::Error>(())
     /// ```
     #[must_use]
@@ -256,15 +262,15 @@ impl<S> Recorder<S> {
     ///     .trim(),
     /// );
     ///
-    /// metrics::increment_counter!(
+    /// metrics::counter!(
     ///     "value", "whose" => "mine", "kind" => "owned",
-    /// );
-    /// metrics::increment_counter!(
+    /// ).increment(1);
+    /// metrics::counter!(
     ///     "value", "whose" => "mine", "kind" => "ref",
-    /// );
-    /// metrics::increment_counter!(
+    /// ).increment(1);
+    /// metrics::counter!(
     ///     "value", "kind" => "owned", "whose" => "foreign",
-    /// );
+    /// ).increment(1);
     ///
     /// let report = prometheus::TextEncoder::new()
     ///     .encode_to_string(&recorder.registry().gather())?;
@@ -338,15 +344,15 @@ impl<S> Recorder<S> {
     ///     .trim(),
     /// );
     ///
-    /// metrics::increment_gauge!(
-    ///     "value", 2.0, "whose" => "mine", "kind" => "owned",
-    /// );
-    /// metrics::decrement_gauge!(
-    ///     "value", 2.0, "whose" => "mine", "kind" => "ref",
-    /// );
-    /// metrics::increment_gauge!(
-    ///     "value", 2.0, "kind" => "owned", "whose" => "foreign",
-    /// );
+    /// metrics::gauge!(
+    ///     "value", "whose" => "mine", "kind" => "owned",
+    /// ).increment(2.0);
+    /// metrics::gauge!(
+    ///     "value", "whose" => "mine", "kind" => "ref",
+    /// ).decrement(2.0);
+    /// metrics::gauge!(
+    ///     "value", "kind" => "owned", "whose" => "foreign",
+    /// ).increment(2.0);
     ///
     /// let report = prometheus::TextEncoder::new()
     ///     .encode_to_string(&prometheus::default_registry().gather())?;
@@ -420,7 +426,11 @@ where
         );
     }
 
-    fn register_counter(&self, key: &metrics::Key) -> metrics::Counter {
+    fn register_counter(
+        &self,
+        key: &metrics::Key,
+        _: &metrics::Metadata<'_>,
+    ) -> metrics::Counter {
         self.metrics
             .get_or_create_counter(key, |counter| {
                 counter.as_ref().map(|c| Arc::clone(c).into()).or_else(|e| {
@@ -440,7 +450,11 @@ where
             })
     }
 
-    fn register_gauge(&self, key: &metrics::Key) -> metrics::Gauge {
+    fn register_gauge(
+        &self,
+        key: &metrics::Key,
+        _: &metrics::Metadata<'_>,
+    ) -> metrics::Gauge {
         self.metrics
             .get_or_create_gauge(key, |gauge| {
                 gauge.as_ref().map(|c| Arc::clone(c).into()).or_else(|e| {
@@ -458,7 +472,11 @@ where
             })
     }
 
-    fn register_histogram(&self, key: &metrics::Key) -> metrics::Histogram {
+    fn register_histogram(
+        &self,
+        key: &metrics::Key,
+        _: &metrics::Metadata<'_>,
+    ) -> metrics::Histogram {
         self.metrics
             .get_or_create_histogram(key, |histogram| {
                 histogram.as_ref().map(|c| Arc::clone(c).into()).or_else(|e| {
@@ -494,7 +512,7 @@ pub struct Builder<
     failure_strategy: FailureStrategy,
 
     /// [`metrics::Layer`]s to wrap the built [`Recorder`] with upon its
-    /// installation as [`metrics::recorder()`].
+    /// installation with the [`metrics::set_global_recorder()`].
     ///
     /// [`metrics::Layer`]: Layer
     layers: Layers,
@@ -524,7 +542,7 @@ impl<S, L> Builder<S, L> {
     ///     .with_registry(&custom)
     ///     .build_and_install();
     ///
-    /// metrics::increment_counter!("count");
+    /// metrics::counter!("count").increment(1);
     ///
     /// let report =
     ///     prometheus::TextEncoder::new().encode_to_string(&custom.gather())?;
@@ -572,7 +590,7 @@ impl<S, L> Builder<S, L> {
     ///     .with_failure_strategy(strategy::NoOp)
     ///     .build_and_install();
     ///
-    /// metrics::increment_counter!("invalid.name");
+    /// metrics::counter!("invalid.name").increment(1);
     ///
     /// let stats = prometheus::default_registry().gather();
     /// assert_eq!(stats.len(), 0);
@@ -626,7 +644,7 @@ impl<S, L> Builder<S, L> {
     ///     .trim(),
     /// );
     ///
-    /// metrics::increment_gauge!("value", 1.0);
+    /// metrics::gauge!("value").increment(1.0);
     ///
     /// let report = prometheus::TextEncoder::new()
     ///     .encode_to_string(&prometheus::default_registry().gather())?;
@@ -691,7 +709,7 @@ impl<S, L> Builder<S, L> {
     ///     .trim(),
     /// );
     ///
-    /// metrics::increment_counter!("value");
+    /// metrics::counter!("value").increment(1);
     ///
     /// let report = prometheus::TextEncoder::new()
     ///     .encode_to_string(&prometheus::default_registry().gather())?;
@@ -726,8 +744,8 @@ impl<S, L> Builder<S, L> {
     /// # Usage
     ///
     /// Use this method if you want to:
-    /// - either install the built [`Recorder`] as [`metrics::recorder()`]
-    ///   manually;
+    /// - either install the built [`Recorder`] with the
+    ///   [`metrics::set_global_recorder()`] manually;
     /// - or to compose the built [`Recorder`] with some other
     ///   [`metrics::Recorder`]s (like being able to write into multiple
     ///   [`prometheus::Registry`]s via [`metrics::layer::Fanout`], for
@@ -760,8 +778,8 @@ impl<S, L> Builder<S, L> {
     /// # Usage
     ///
     /// Use this method if you want to:
-    /// - either install the built [`FreezableRecorder`] as
-    ///   [`metrics::recorder()`] manually;
+    /// - either install the built [`FreezableRecorder`] with the
+    ///   [`metrics::set_global_recorder()`] manually;
     /// - or to compose the built [`FreezableRecorder`] with some other
     ///   [`metrics::Recorder`]s (like being able to write into multiple
     ///   [`prometheus::Registry`]s via [`metrics::layer::Fanout`], for
@@ -796,8 +814,8 @@ impl<S, L> Builder<S, L> {
     /// # Usage
     ///
     /// Use this method if you want to:
-    /// - either install the built [`FrozenRecorder`] as [`metrics::recorder()`]
-    ///   manually;
+    /// - either install the built [`FrozenRecorder`] with the
+    ///   [`metrics::set_global_recorder()`] manually;
     /// - or to compose the built [`FrozenRecorder`] with some other
     ///   [`metrics::Recorder`]s (like being able to write into multiple
     ///   [`prometheus::Registry`]s via [`metrics::layer::Fanout`], for
@@ -821,13 +839,13 @@ impl<S, L> Builder<S, L> {
         layers.layer(rec)
     }
 
-    /// Builds a [`Recorder`] out of this [`Builder`] and tries to install it as
-    /// [`metrics::recorder()`].
+    /// Builds a [`Recorder`] out of this [`Builder`] and tries to install it
+    /// with the [`metrics::set_global_recorder()`].
     ///
     /// # Errors
     ///
-    /// If the built [`Recorder`] fails to be installed as
-    /// [`metrics::recorder()`].
+    /// If the built [`Recorder`] fails to be installed with the
+    /// [`metrics::set_global_recorder()`].
     ///
     /// # Example
     ///
@@ -846,10 +864,10 @@ impl<S, L> Builder<S, L> {
     ///     .try_build_and_install();
     /// assert!(res.is_ok(), "cannot install `Recorder`: {}", res.unwrap_err());
     ///
-    /// metrics::increment_counter!("count");
-    /// metrics::increment_gauge!("value", 3.0);
-    /// metrics::histogram!("histo", 38.0);
-    /// metrics::histogram!("ignored_histo", 1.0);
+    /// metrics::counter!("count").increment(1);
+    /// metrics::gauge!("value").increment(3.0);
+    /// metrics::histogram!("histo").record(38.0);
+    /// metrics::histogram!("ignored_histo").record(1.0);
     ///
     /// let report =
     ///     prometheus::TextEncoder::new().encode_to_string(&custom.gather())?;
@@ -885,7 +903,7 @@ impl<S, L> Builder<S, L> {
     /// ```
     pub fn try_build_and_install(
         self,
-    ) -> Result<Recorder<S>, metrics::SetRecorderError>
+    ) -> Result<Recorder<S>, metrics::SetRecorderError<L::Output>>
     where
         S: failure::Strategy + Clone,
         L: Layer<Recorder<S>>,
@@ -899,17 +917,17 @@ impl<S, L> Builder<S, L> {
             storage,
             failure_strategy,
         };
-        metrics::set_boxed_recorder(Box::new(layers.layer(rec.clone())))?;
+        metrics::set_global_recorder(layers.layer(rec.clone()))?;
         Ok(rec)
     }
 
     /// Builds a [`FreezableRecorder`] out of this [`Builder`] and tries to
-    /// install it as [`metrics::recorder()`].
+    /// install it with the [`metrics::set_global_recorder()`].
     ///
     /// # Errors
     ///
-    /// If the built [`FreezableRecorder`] fails to be installed as
-    /// [`metrics::recorder()`].
+    /// If the built [`FreezableRecorder`] fails to be installed with the
+    /// [`metrics::set_global_recorder()`].
     ///
     /// # Example
     ///
@@ -931,13 +949,13 @@ impl<S, L> Builder<S, L> {
     ///     res.unwrap_err(),
     /// );
     ///
-    /// metrics::increment_gauge!("value", 3.0);
-    /// metrics::increment_gauge!("ignored_value", 1.0);
+    /// metrics::gauge!("value").increment(3.0);
+    /// metrics::gauge!("ignored_value").increment(1.0);
     ///
     /// res.unwrap().freeze();
     ///
-    /// metrics::increment_counter!("count");
-    /// metrics::increment_gauge!("value", 4.0);
+    /// metrics::counter!("count").increment(1);
+    /// metrics::gauge!("value").increment(4.0);
     ///
     /// let report =
     ///     prometheus::TextEncoder::new().encode_to_string(&custom.gather())?;
@@ -959,7 +977,7 @@ impl<S, L> Builder<S, L> {
     /// [`FreezableRecorder`]: Freezable
     pub fn try_build_freezable_and_install(
         self,
-    ) -> Result<freezable::Recorder<S>, metrics::SetRecorderError>
+    ) -> Result<freezable::Recorder<S>, metrics::SetRecorderError<L::Output>>
     where
         S: failure::Strategy + Clone,
         L: Layer<freezable::Recorder<S>>,
@@ -974,22 +992,21 @@ impl<S, L> Builder<S, L> {
             storage,
             failure_strategy,
         });
-        metrics::set_boxed_recorder(Box::new(layers.layer(rec.clone())))?;
+        metrics::set_global_recorder(layers.layer(rec.clone()))?;
         Ok(rec)
     }
 
     /// Builds a [`FrozenRecorder`] out of this [`Builder`] and tries to install
-    /// it as [`metrics::recorder()`].
+    /// it with the [`metrics::set_global_recorder()`].
     ///
     /// Returns the [`prometheus::Registry`] backing the installed
     /// [`FrozenRecorder`], as there is nothing you can configure with the
-    /// installed [`FrozenRecorder`] itself. For usage as [`metrics::Recorder`],
-    /// get it via [`metrics::recorder()`] directly.
+    /// installed [`FrozenRecorder`] itself.
     ///
     /// # Errors
     ///
-    /// If the built [`FrozenRecorder`] fails to be installed as
-    /// [`metrics::recorder()`].
+    /// If the built [`FrozenRecorder`] fails to be installed with the
+    /// [`metrics::set_global_recorder()`].
     ///
     /// # Example
     ///
@@ -1013,9 +1030,9 @@ impl<S, L> Builder<S, L> {
     ///     res.unwrap_err(),
     /// );
     ///
-    /// metrics::increment_counter!("count");
-    /// metrics::increment_gauge!("value", 3.0);
-    /// metrics::increment_gauge!("ignored_value", 1.0);
+    /// metrics::counter!("count").increment(1);
+    /// metrics::gauge!("value").increment(3.0);
+    /// metrics::gauge!("ignored_value").increment(1.0);
     ///
     /// let report =
     ///     prometheus::TextEncoder::new().encode_to_string(&custom.gather())?;
@@ -1040,7 +1057,7 @@ impl<S, L> Builder<S, L> {
     /// [`FrozenRecorder`]: Frozen
     pub fn try_build_frozen_and_install(
         self,
-    ) -> Result<prometheus::Registry, metrics::SetRecorderError>
+    ) -> Result<prometheus::Registry, metrics::SetRecorderError<L::Output>>
     where
         S: failure::Strategy + Clone,
         L: Layer<frozen::Recorder<S>>,
@@ -1049,17 +1066,17 @@ impl<S, L> Builder<S, L> {
         let Self { storage, failure_strategy, layers } = self;
         let rec =
             frozen::Recorder { storage: (&storage).into(), failure_strategy };
-        metrics::set_boxed_recorder(Box::new(layers.layer(rec)))?;
+        metrics::set_global_recorder(layers.layer(rec))?;
         Ok(storage.prometheus)
     }
 
-    /// Builds a [`Recorder`] out of this [`Builder`] and installs it as
-    /// [`metrics::recorder()`].
+    /// Builds a [`Recorder`] out of this [`Builder`] and installs it with the
+    /// [`metrics::set_global_recorder()`].
     ///
     /// # Panics
     ///
-    /// If the built [`Recorder`] fails to be installed as
-    /// [`metrics::recorder()`].
+    /// If the built [`Recorder`] fails to be installed with the
+    /// [`metrics::set_global_recorder()`].
     ///
     /// # Example
     ///
@@ -1077,10 +1094,10 @@ impl<S, L> Builder<S, L> {
     ///     .with_layer(FilterLayer::from_patterns(["ignored"]))
     ///     .build_and_install();
     ///
-    /// metrics::increment_counter!("count");
-    /// metrics::increment_gauge!("value", 3.0);
-    /// metrics::histogram!("histo", 38.0);
-    /// metrics::histogram!("ignored_histo", 1.0);
+    /// metrics::counter!("count").increment(1);
+    /// metrics::gauge!("value").increment(3.0);
+    /// metrics::histogram!("histo").record(38.0);
+    /// metrics::histogram!("ignored_histo").record(1.0);
     ///
     /// let report = prometheus::TextEncoder::new()
     ///     .encode_to_string(&recorder.registry().gather())?;
@@ -1122,19 +1139,19 @@ impl<S, L> Builder<S, L> {
     {
         self.try_build_and_install().unwrap_or_else(|e| {
             panic!(
-                "failed to install `metrics_prometheus::Recorder` as \
-                 `metrics::recorder()`: {e}",
+                "failed to install `metrics_prometheus::Recorder` with \
+                 `metrics::set_global_recorder()`: {e}",
             )
         })
     }
 
     /// Builds a [`FreezableRecorder`] out of this [`Builder`] and installs it
-    /// as [`metrics::recorder()`].
+    /// with the [`metrics::set_global_recorder()`].
     ///
     /// # Panics
     ///
-    /// If the built [`FreezableRecorder`] fails to be installed as
-    /// [`metrics::recorder()`].
+    /// If the built [`FreezableRecorder`] fails to be installed with the
+    /// [`metrics::set_global_recorder()`].
     ///
     /// # Example
     ///
@@ -1151,13 +1168,13 @@ impl<S, L> Builder<S, L> {
     ///     .with_layer(FilterLayer::from_patterns(["ignored"]))
     ///     .build_freezable_and_install();
     ///
-    /// metrics::increment_gauge!("value", 3.0);
-    /// metrics::increment_gauge!("ignored_value", 1.0);
+    /// metrics::gauge!("value").increment(3.0);
+    /// metrics::gauge!("ignored_value").increment(1.0);
     ///
     /// recorder.freeze();
     ///
-    /// metrics::increment_counter!("count");
-    /// metrics::increment_gauge!("value", 4.0);
+    /// metrics::counter!("count").increment(1);
+    /// metrics::gauge!("value").increment(4.0);
     ///
     /// let report =
     ///     prometheus::TextEncoder::new().encode_to_string(&custom.gather())?;
@@ -1186,24 +1203,23 @@ impl<S, L> Builder<S, L> {
     {
         self.try_build_freezable_and_install().unwrap_or_else(|e| {
             panic!(
-                "failed to install `metrics_prometheus::FreezableRecorder` as \
-                 `metrics::recorder()`: {e}",
+                "failed to install `metrics_prometheus::FreezableRecorder` \
+                 with `metrics::set_global_recorder()`: {e}",
             )
         })
     }
 
-    /// Builds a [`FrozenRecorder`] out of this [`Builder`] and installs it as
-    /// [`metrics::recorder()`].
+    /// Builds a [`FrozenRecorder`] out of this [`Builder`] and installs it with
+    /// the [`metrics::set_global_recorder()`].
     ///
     /// Returns the [`prometheus::Registry`] backing the installed
     /// [`FrozenRecorder`], as there is nothing you can configure with the
-    /// installed [`FrozenRecorder`] itself. For usage as [`metrics::Recorder`],
-    /// get it via [`metrics::recorder()`] directly.
+    /// installed [`FrozenRecorder`] itself.
     ///
     /// # Panics
     ///
-    /// If the built [`FrozenRecorder`] fails to be installed as
-    /// [`metrics::recorder()`].
+    /// If the built [`FrozenRecorder`] fails to be installed with the
+    /// [`metrics::set_global_recorder()`].
     ///
     /// # Example
     ///
@@ -1222,9 +1238,9 @@ impl<S, L> Builder<S, L> {
     ///     .with_layer(FilterLayer::from_patterns(["ignored"]))
     ///     .build_frozen_and_install();
     ///
-    /// metrics::increment_counter!("count");
-    /// metrics::increment_gauge!("value", 3.0);
-    /// metrics::increment_gauge!("ignored_value", 1.0);
+    /// metrics::counter!("count").increment(1);
+    /// metrics::gauge!("value").increment(3.0);
+    /// metrics::gauge!("ignored_value").increment(1.0);
     ///
     /// let report =
     ///     prometheus::TextEncoder::new().encode_to_string(&custom.gather())?;
@@ -1255,8 +1271,8 @@ impl<S, L> Builder<S, L> {
     {
         self.try_build_frozen_and_install().unwrap_or_else(|e| {
             panic!(
-                "failed to install `metrics_prometheus::FrozenRecorder` as \
-                 `metrics::recorder()`: {e}",
+                "failed to install `metrics_prometheus::FrozenRecorder` with \
+                 `metrics::set_global_recorder()`: {e}",
             )
         })
     }
@@ -1264,7 +1280,7 @@ impl<S, L> Builder<S, L> {
 
 impl<S, H, T> Builder<S, layer::Stack<H, T>> {
     /// Adds the provided [`metrics::Layer`] to wrap the built [`Recorder`] upon
-    /// its installation as [`metrics::recorder()`].
+    /// its installation with the [`metrics::set_global_recorder()`].
     ///
     /// # Example
     ///
@@ -1276,9 +1292,9 @@ impl<S, H, T> Builder<S, layer::Stack<H, T>> {
     ///     .with_layer(FilterLayer::from_patterns(["skipped"]))
     ///     .build_and_install();
     ///
-    /// metrics::increment_counter!("ignored_counter");
-    /// metrics::increment_counter!("reported_counter");
-    /// metrics::increment_counter!("skipped_counter");
+    /// metrics::counter!("ignored_counter").increment(1);
+    /// metrics::counter!("reported_counter").increment(1);
+    /// metrics::counter!("skipped_counter").increment(1);
     ///
     /// let report = prometheus::TextEncoder::new()
     ///     .encode_to_string(&prometheus::default_registry().gather())?;
