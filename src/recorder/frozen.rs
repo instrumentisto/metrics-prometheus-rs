@@ -34,10 +34,16 @@ use super::Builder;
 ///     .build_frozen_and_install();
 ///
 /// // `metrics` crate interfaces allow to change already registered metrics.
-/// metrics::increment_counter!("count", "whose" => "mine", "kind" => "owned");
-/// metrics::increment_counter!("count", "whose" => "mine", "kind" => "ref");
-/// metrics::increment_counter!("count", "kind" => "owned", "whose" => "dummy");
-/// metrics::increment_gauge!("value", 1.0);
+/// metrics::counter!(
+///     "count", "whose" => "mine", "kind" => "owned",
+/// ).increment(1);
+/// metrics::counter!(
+///     "count", "whose" => "mine", "kind" => "ref",
+/// ).increment(1);
+/// metrics::counter!(
+///     "count", "kind" => "owned", "whose" => "dummy",
+/// ).increment(1);
+/// metrics::gauge!("value").increment(1.0);
 ///
 /// let report = prometheus::TextEncoder::new()
 ///     .encode_to_string(&registry.gather())?;
@@ -57,7 +63,7 @@ use super::Builder;
 /// );
 ///
 /// // However, you cannot register new metrics. This is just no-op.
-/// metrics::increment_gauge!("new", 2.0);
+/// metrics::gauge!("new").increment(2.0);
 ///
 /// let report = prometheus::TextEncoder::new()
 ///     .encode_to_string(&registry.gather())?;
@@ -129,9 +135,9 @@ use super::Builder;
 ///     .with_failure_strategy(strategy::Panic)
 ///     .build_and_install();
 ///
-/// metrics::increment_gauge!("value", 1.0);
+/// metrics::gauge!("value").increment(1.0);
 /// // This panics, as such labeling is not allowed by `prometheus` crate.
-/// metrics::increment_gauge!("value", 2.0, "whose" => "mine");
+/// metrics::gauge!("value", "whose" => "mine").increment(2.0);
 /// # Ok::<_, prometheus::Error>(())
 /// ```
 ///
@@ -200,7 +206,11 @@ where
         );
     }
 
-    fn register_counter(&self, key: &metrics::Key) -> metrics::Counter {
+    fn register_counter(
+        &self,
+        key: &metrics::Key,
+        _: &metrics::Metadata<'_>,
+    ) -> metrics::Counter {
         self.storage
             .get_metric::<prometheus::IntCounter>(key)
             .and_then(|res| {
@@ -219,7 +229,11 @@ where
             })
     }
 
-    fn register_gauge(&self, key: &metrics::Key) -> metrics::Gauge {
+    fn register_gauge(
+        &self,
+        key: &metrics::Key,
+        _: &metrics::Metadata<'_>,
+    ) -> metrics::Gauge {
         self.storage
             .get_metric::<prometheus::Gauge>(key)
             .and_then(|res| {
@@ -237,7 +251,11 @@ where
             })
     }
 
-    fn register_histogram(&self, key: &metrics::Key) -> metrics::Histogram {
+    fn register_histogram(
+        &self,
+        key: &metrics::Key,
+        _: &metrics::Metadata<'_>,
+    ) -> metrics::Histogram {
         self.storage
             .get_metric::<prometheus::Histogram>(key)
             .and_then(|res| {

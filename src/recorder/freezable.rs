@@ -22,9 +22,15 @@ use super::Builder;
 /// let recorder = metrics_prometheus::install_freezable();
 ///
 /// // Either use `metrics` crate interfaces.
-/// metrics::increment_counter!("count", "whose" => "mine", "kind" => "owned");
-/// metrics::increment_counter!("count", "whose" => "mine", "kind" => "ref");
-/// metrics::increment_counter!("count", "kind" => "owned", "whose" => "dummy");
+/// metrics::counter!(
+///     "count", "whose" => "mine", "kind" => "owned",
+/// ).increment(1);
+/// metrics::counter!(
+///     "count", "whose" => "mine", "kind" => "ref",
+/// ).increment(1);
+/// metrics::counter!(
+///     "count", "kind" => "owned", "whose" => "dummy",
+/// ).increment(1);
 ///
 /// // Or construct and provide `prometheus` metrics directly.
 /// recorder.register_metric(prometheus::Gauge::new("value", "help")?);
@@ -50,7 +56,7 @@ use super::Builder;
 ///
 /// // However, you cannot register new metrics after freezing.
 /// // This is just no-op.
-/// metrics::increment_gauge!("new", 2.0);
+/// metrics::gauge!("new").increment(2.0);
 ///
 /// let report = prometheus::TextEncoder::new()
 ///     .encode_to_string(&prometheus::default_registry().gather())?;
@@ -130,12 +136,12 @@ use super::Builder;
 ///     .with_failure_strategy(strategy::Panic)
 ///     .build_freezable_and_install();
 ///
-/// metrics::increment_counter!("count", "kind" => "owned");
+/// metrics::counter!("count", "kind" => "owned").increment(1);
 ///
 /// recoder.freeze();
 ///
 /// // This panics, as such labeling is not allowed by `prometheus` crate.
-/// metrics::increment_counter!("count", "whose" => "mine");
+/// metrics::counter!("count", "whose" => "mine").increment(1);
 /// ```
 ///
 /// [`AtomicBool`]: std::sync::atomic::AtomicBool
@@ -202,7 +208,7 @@ impl<S> Recorder<S> {
     /// recorder.registry().register(Box::new(counter))?;
     ///
     /// // panics: Duplicate metrics collector registration attempted
-    /// metrics::increment_counter!("value");
+    /// metrics::counter!("value").increment(1);
     /// # Ok::<_, prometheus::Error>(())
     /// ```
     ///
@@ -262,15 +268,15 @@ impl<S> Recorder<S> {
     /// // No-op, as the `Recorder` has been frozen.
     /// recorder.try_register_metric(prometheus::Gauge::new("new", "help")?)?;
     ///
-    /// metrics::increment_counter!(
+    /// metrics::counter!(
     ///     "value", "whose" => "mine", "kind" => "owned",
-    /// );
-    /// metrics::increment_counter!(
+    /// ).increment(1);
+    /// metrics::counter!(
     ///     "value", "whose" => "mine", "kind" => "ref",
-    /// );
-    /// metrics::increment_counter!(
+    /// ).increment(1);
+    /// metrics::counter!(
     ///     "value", "kind" => "owned", "whose" => "foreign",
-    /// );
+    /// ).increment(1);
     ///
     /// let report = prometheus::TextEncoder::new()
     ///     .encode_to_string(&recorder.registry().gather())?;
@@ -356,15 +362,15 @@ impl<S> Recorder<S> {
     /// // No-op, as the `Recorder` has been frozen.
     /// recorder.register_metric(prometheus::Gauge::new("new", "help")?);
     ///
-    /// metrics::increment_gauge!(
-    ///     "value", 2.0, "whose" => "mine", "kind" => "owned",
-    /// );
-    /// metrics::decrement_gauge!(
-    ///     "value", 2.0, "whose" => "mine", "kind" => "ref",
-    /// );
-    /// metrics::increment_gauge!(
-    ///     "value", 2.0, "kind" => "owned", "whose" => "foreign",
-    /// );
+    /// metrics::gauge!(
+    ///     "value", "whose" => "mine", "kind" => "owned",
+    /// ).increment(2.0);
+    /// metrics::gauge!(
+    ///     "value","whose" => "mine", "kind" => "ref",
+    /// ).decrement(2.0);
+    /// metrics::gauge!(
+    ///     "value", "kind" => "owned", "whose" => "foreign",
+    /// ).increment(2.0);
     ///
     /// let report = prometheus::TextEncoder::new()
     ///     .encode_to_string(&recorder.registry().gather())?;
@@ -424,7 +430,7 @@ impl<S> Recorder<S> {
     /// ```rust
     /// let recorder = metrics_prometheus::install_freezable();
     ///
-    /// metrics::increment_counter!("count");
+    /// metrics::counter!("count").increment(1);
     ///
     /// let report = prometheus::TextEncoder::new()
     ///     .encode_to_string(&recorder.registry().gather())?;
@@ -440,9 +446,9 @@ impl<S> Recorder<S> {
     ///
     /// recorder.freeze();
     ///
-    /// metrics::increment_counter!("count");
+    /// metrics::counter!("count").increment(1);
     /// // This is no-op.
-    /// metrics::increment_counter!("new");
+    /// metrics::counter!("new").increment(1);
     ///
     /// let report = prometheus::TextEncoder::new()
     ///     .encode_to_string(&recorder.registry().gather())?;
@@ -519,24 +525,36 @@ where
         }
     }
 
-    fn register_counter(&self, key: &metrics::Key) -> metrics::Counter {
+    fn register_counter(
+        &self,
+        key: &metrics::Key,
+        meta: &metrics::Metadata<'_>,
+    ) -> metrics::Counter {
         self.frozen.get().map_or_else(
-            || self.usual.register_counter(key),
-            |frozen| frozen.register_counter(key),
+            || self.usual.register_counter(key, meta),
+            |frozen| frozen.register_counter(key, meta),
         )
     }
 
-    fn register_gauge(&self, key: &metrics::Key) -> metrics::Gauge {
+    fn register_gauge(
+        &self,
+        key: &metrics::Key,
+        meta: &metrics::Metadata<'_>,
+    ) -> metrics::Gauge {
         self.frozen.get().map_or_else(
-            || self.usual.register_gauge(key),
-            |frozen| frozen.register_gauge(key),
+            || self.usual.register_gauge(key, meta),
+            |frozen| frozen.register_gauge(key, meta),
         )
     }
 
-    fn register_histogram(&self, key: &metrics::Key) -> metrics::Histogram {
+    fn register_histogram(
+        &self,
+        key: &metrics::Key,
+        meta: &metrics::Metadata<'_>,
+    ) -> metrics::Histogram {
         self.frozen.get().map_or_else(
-            || self.usual.register_histogram(key),
-            |frozen| frozen.register_histogram(key),
+            || self.usual.register_histogram(key, meta),
+            |frozen| frozen.register_histogram(key, meta),
         )
     }
 }

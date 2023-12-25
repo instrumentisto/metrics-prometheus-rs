@@ -194,7 +194,7 @@ pub use self::{
 /// # Errors
 ///
 /// If the [`Recorder`] fails to be installed as [`metrics::recorder()`].
-pub fn try_install() -> Result<Recorder, metrics::SetRecorderError> {
+pub fn try_install() -> Result<Recorder, metrics::SetRecorderError<Recorder>> {
     Recorder::builder().try_build_and_install()
 }
 
@@ -206,7 +206,7 @@ pub fn try_install() -> Result<Recorder, metrics::SetRecorderError> {
 /// If the [`FreezableRecorder`] fails to be installed as
 /// [`metrics::recorder()`].
 pub fn try_install_freezable(
-) -> Result<FreezableRecorder, metrics::SetRecorderError> {
+) -> Result<FreezableRecorder, metrics::SetRecorderError<FreezableRecorder>> {
     Recorder::builder().try_build_freezable_and_install()
 }
 
