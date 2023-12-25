@@ -512,7 +512,7 @@ pub struct Builder<
     failure_strategy: FailureStrategy,
 
     /// [`metrics::Layer`]s to wrap the built [`Recorder`] with upon its
-    /// installation as [`metrics::recorder()`].
+    /// installation with [`metrics::set_global_recorder()`].
     ///
     /// [`metrics::Layer`]: Layer
     layers: Layers,
@@ -744,8 +744,8 @@ impl<S, L> Builder<S, L> {
     /// # Usage
     ///
     /// Use this method if you want to:
-    /// - either install the built [`Recorder`] as [`metrics::recorder()`]
-    ///   manually;
+    /// - either install the built [`Recorder`] with
+    ///   [`metrics::set_global_recorder()`] manually;
     /// - or to compose the built [`Recorder`] with some other
     ///   [`metrics::Recorder`]s (like being able to write into multiple
     ///   [`prometheus::Registry`]s via [`metrics::layer::Fanout`], for
@@ -778,8 +778,8 @@ impl<S, L> Builder<S, L> {
     /// # Usage
     ///
     /// Use this method if you want to:
-    /// - either install the built [`FreezableRecorder`] as
-    ///   [`metrics::recorder()`] manually;
+    /// - either install the built [`FreezableRecorder`] with
+    ///   [`metrics::set_global_recorder()`] manually;
     /// - or to compose the built [`FreezableRecorder`] with some other
     ///   [`metrics::Recorder`]s (like being able to write into multiple
     ///   [`prometheus::Registry`]s via [`metrics::layer::Fanout`], for
@@ -814,8 +814,8 @@ impl<S, L> Builder<S, L> {
     /// # Usage
     ///
     /// Use this method if you want to:
-    /// - either install the built [`FrozenRecorder`] as [`metrics::recorder()`]
-    ///   manually;
+    /// - either install the built [`FrozenRecorder`] with
+    ///   [`metrics::set_global_recorder()`] manually;
     /// - or to compose the built [`FrozenRecorder`] with some other
     ///   [`metrics::Recorder`]s (like being able to write into multiple
     ///   [`prometheus::Registry`]s via [`metrics::layer::Fanout`], for
@@ -839,13 +839,13 @@ impl<S, L> Builder<S, L> {
         layers.layer(rec)
     }
 
-    /// Builds a [`Recorder`] out of this [`Builder`] and tries to install it as
-    /// [`metrics::recorder()`].
+    /// Builds a [`Recorder`] out of this [`Builder`] and tries to install it
+    /// with [`metrics::set_global_recorder()`].
     ///
     /// # Errors
     ///
-    /// If the built [`Recorder`] fails to be installed as
-    /// [`metrics::recorder()`].
+    /// If the built [`Recorder`] fails to be installed with
+    /// [`metrics::set_global_recorder()`].
     ///
     /// # Example
     ///
@@ -922,12 +922,12 @@ impl<S, L> Builder<S, L> {
     }
 
     /// Builds a [`FreezableRecorder`] out of this [`Builder`] and tries to
-    /// install it as [`metrics::recorder()`].
+    /// install it with [`metrics::set_global_recorder()`].
     ///
     /// # Errors
     ///
-    /// If the built [`FreezableRecorder`] fails to be installed as
-    /// [`metrics::recorder()`].
+    /// If the built [`FreezableRecorder`] fails to be installed with
+    /// [`metrics::set_global_recorder()`].
     ///
     /// # Example
     ///
@@ -997,17 +997,16 @@ impl<S, L> Builder<S, L> {
     }
 
     /// Builds a [`FrozenRecorder`] out of this [`Builder`] and tries to install
-    /// it as [`metrics::recorder()`].
+    /// it with [`metrics::set_global_recorder()`].
     ///
     /// Returns the [`prometheus::Registry`] backing the installed
     /// [`FrozenRecorder`], as there is nothing you can configure with the
-    /// installed [`FrozenRecorder`] itself. For usage as [`metrics::Recorder`],
-    /// get it via [`metrics::recorder()`] directly.
+    /// installed [`FrozenRecorder`] itself.
     ///
     /// # Errors
     ///
-    /// If the built [`FrozenRecorder`] fails to be installed as
-    /// [`metrics::recorder()`].
+    /// If the built [`FrozenRecorder`] fails to be installed with
+    /// [`metrics::set_global_recorder()`].
     ///
     /// # Example
     ///
@@ -1071,13 +1070,13 @@ impl<S, L> Builder<S, L> {
         Ok(storage.prometheus)
     }
 
-    /// Builds a [`Recorder`] out of this [`Builder`] and installs it as
-    /// [`metrics::recorder()`].
+    /// Builds a [`Recorder`] out of this [`Builder`] and installs it with
+    /// [`metrics::set_global_recorder()`].
     ///
     /// # Panics
     ///
-    /// If the built [`Recorder`] fails to be installed as
-    /// [`metrics::recorder()`].
+    /// If the built [`Recorder`] fails to be installed with
+    /// [`metrics::set_global_recorder()`].
     ///
     /// # Example
     ///
@@ -1140,19 +1139,19 @@ impl<S, L> Builder<S, L> {
     {
         self.try_build_and_install().unwrap_or_else(|e| {
             panic!(
-                "failed to install `metrics_prometheus::Recorder` as \
-                 `metrics::recorder()`: {e}",
+                "failed to install `metrics_prometheus::Recorder` with \
+                 `metrics::set_global_recorder()`: {e}",
             )
         })
     }
 
     /// Builds a [`FreezableRecorder`] out of this [`Builder`] and installs it
-    /// as [`metrics::recorder()`].
+    /// with [`metrics::set_global_recorder()`].
     ///
     /// # Panics
     ///
-    /// If the built [`FreezableRecorder`] fails to be installed as
-    /// [`metrics::recorder()`].
+    /// If the built [`FreezableRecorder`] fails to be installed with
+    /// [`metrics::set_global_recorder()`].
     ///
     /// # Example
     ///
@@ -1204,24 +1203,23 @@ impl<S, L> Builder<S, L> {
     {
         self.try_build_freezable_and_install().unwrap_or_else(|e| {
             panic!(
-                "failed to install `metrics_prometheus::FreezableRecorder` as \
-                 `metrics::recorder()`: {e}",
+                "failed to install `metrics_prometheus::FreezableRecorder` \
+                 with `metrics::set_global_recorder()`: {e}",
             )
         })
     }
 
-    /// Builds a [`FrozenRecorder`] out of this [`Builder`] and installs it as
-    /// [`metrics::recorder()`].
+    /// Builds a [`FrozenRecorder`] out of this [`Builder`] and installs it with
+    /// [`metrics::set_global_recorder()`].
     ///
     /// Returns the [`prometheus::Registry`] backing the installed
     /// [`FrozenRecorder`], as there is nothing you can configure with the
-    /// installed [`FrozenRecorder`] itself. For usage as [`metrics::Recorder`],
-    /// get it via [`metrics::recorder()`] directly.
+    /// installed [`FrozenRecorder`] itself.
     ///
     /// # Panics
     ///
-    /// If the built [`FrozenRecorder`] fails to be installed as
-    /// [`metrics::recorder()`].
+    /// If the built [`FrozenRecorder`] fails to be installed with
+    /// [`metrics::set_global_recorder()`].
     ///
     /// # Example
     ///
@@ -1273,8 +1271,8 @@ impl<S, L> Builder<S, L> {
     {
         self.try_build_frozen_and_install().unwrap_or_else(|e| {
             panic!(
-                "failed to install `metrics_prometheus::FrozenRecorder` as \
-                 `metrics::recorder()`: {e}",
+                "failed to install `metrics_prometheus::FrozenRecorder` with \
+                 `metrics::set_global_recorder()`: {e}",
             )
         })
     }
@@ -1282,7 +1280,7 @@ impl<S, L> Builder<S, L> {
 
 impl<S, H, T> Builder<S, layer::Stack<H, T>> {
     /// Adds the provided [`metrics::Layer`] to wrap the built [`Recorder`] upon
-    /// its installation as [`metrics::recorder()`].
+    /// its installation with [`metrics::set_global_recorder()`].
     ///
     /// # Example
     ///
