@@ -25,7 +25,6 @@ impl<M> Metric<M> {
     }
 
     /// Unwraps this [`Metric`] returning its inner [`prometheus`] metric
-    #[allow(clippy::missing_const_for_fn)] // false positive: drop
     #[must_use]
     pub fn into_inner(self) -> M {
         self.0

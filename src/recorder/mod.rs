@@ -557,6 +557,9 @@ impl<S, L> Builder<S, L> {
     /// );
     /// # Ok::<_, prometheus::Error>(())
     /// ```
+    // TODO: Anonymous lifetimes in `impl Trait` are unstable.
+    //       Try remove on Rust 1.78 upgrade.
+    #[allow(single_use_lifetimes)]
     pub fn with_registry<'r>(
         mut self,
         registry: impl IntoCow<'r, prometheus::Registry>,
@@ -595,7 +598,6 @@ impl<S, L> Builder<S, L> {
     /// let stats = prometheus::default_registry().gather();
     /// assert_eq!(stats.len(), 0);
     /// ```
-    #[allow(clippy::missing_const_for_fn)] // false positive: drop
     pub fn with_failure_strategy<F>(self, strategy: F) -> Builder<F, L>
     where
         F: failure::Strategy,
@@ -1311,7 +1313,6 @@ impl<S, H, T> Builder<S, layer::Stack<H, T>> {
     /// ```
     ///
     /// [`metrics::Layer`]: Layer
-    #[allow(clippy::missing_const_for_fn)] // false positive: drop
     pub fn with_layer<L>(
         self,
         layer: L,
