@@ -6,6 +6,23 @@ All user visible changes to this project will be documented in this file. This p
 
 
 
+## [0.7.0] · 2024-??-?? (unreleased)
+[0.7.0]: /../../tree/v0.7.0
+
+[Diff](/../../compare/v0.6.0...v0.7.0)
+
+### BC Breaks
+
+- Upgraded to 0.23 version of `metrics` crate. ([#11], [#10])
+- Upgraded to 0.13 version of `metrics-util` crate. ([#11], [#10])
+- Bumped up [MSRV] to 1.72 because of newer dependencies versions. ([#11], [#10])
+
+[#10]: /../../issues/10
+[#11]: /../../pull/11
+
+
+
+
 ## [0.6.0] · 2023-12-25
 [0.6.0]: /../../tree/v0.6.0
 
@@ -119,4 +136,5 @@ All user visible changes to this project will be documented in this file. This p
 
 
 
+[MSRV]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field
 [Semantic Versioning 2.0.0]: https://semver.org
