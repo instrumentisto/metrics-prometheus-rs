@@ -114,13 +114,13 @@ impl Storage {
         Self: super::Get<Collection<<M as metric::Bundled>::Bundle>>,
     {
         // PANIC: `RwLock` usage is fully panic-safe here.
-        #![allow(
+        #![allow( // intentional
             clippy::missing_panics_doc,
             clippy::unwrap_in_result,
             clippy::unwrap_used
         )]
         // Intentionally, see the comment below on a `write_storage`.
-        #![allow(clippy::significant_drop_tightening)]
+        #![allow(clippy::significant_drop_tightening)] // intentional
 
         use super::Get as _;
 
@@ -173,13 +173,13 @@ impl Storage {
     {
         // PANIC: `RwLock` usage is panic-safe here (considering the
         //        `prometheus::Registry::register()` does not).
-        #![allow(
+        #![allow( // intentional
             clippy::missing_panics_doc,
             clippy::unwrap_in_result,
             clippy::unwrap_used
         )]
         // Intentionally, see the comment below on a `storage`.
-        #![allow(clippy::significant_drop_tightening)]
+        #![allow(clippy::significant_drop_tightening)] // intentional
 
         use super::Get as _;
         use metric::Bundle as _;
@@ -250,13 +250,13 @@ impl Storage {
     {
         // PANIC: `RwLock` usage is panic-safe here (considering the
         //        `prometheus::Registry::register()` does not).
-        #![allow(
+        #![allow(  // intentional
             clippy::missing_panics_doc,
             clippy::unwrap_in_result,
             clippy::unwrap_used
         )]
         // Intentionally, see the comment below on a `storage`.
-        #![allow(clippy::significant_drop_tightening)]
+        #![allow(clippy::significant_drop_tightening)] // intentional
 
         use super::Get as _;
 

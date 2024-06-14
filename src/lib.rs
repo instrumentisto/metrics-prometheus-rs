@@ -92,7 +92,6 @@
     clippy::let_underscore_untyped,
     clippy::lossy_float_literal,
     clippy::manual_c_str_literals,
-    clippy::manual_clamp,
     clippy::map_err_ignore,
     clippy::mem_forget,
     clippy::missing_assert_message,
@@ -119,7 +118,6 @@
     clippy::rc_buffer,
     clippy::rc_mutex,
     clippy::read_zero_byte_vec,
-    clippy::readonly_write_lock,
     clippy::redundant_clone,
     clippy::redundant_type_annotations,
     clippy::ref_patterns,
@@ -168,9 +166,11 @@
     missing_copy_implementations,
     missing_debug_implementations,
     missing_docs,
+    redundant_lifetimes,
     semicolon_in_expressions_from_macros,
     single_use_lifetimes,
     unit_bindings,
+    unnameable_types,
     unreachable_pub,
     unsafe_op_in_unsafe_fn,
     unstable_features,
@@ -236,7 +236,7 @@ pub fn try_install_freezable(
 /// [`metrics::set_global_recorder()`].
 // We do intentionally omit `#[must_use]` here, as we don't want to force
 // library users using the returned `Recorder` directly.
-#[allow(clippy::must_use_candidate)]
+#[allow(clippy::must_use_candidate)] // intentional
 pub fn install() -> Recorder {
     Recorder::builder().build_and_install()
 }
@@ -251,7 +251,7 @@ pub fn install() -> Recorder {
 /// [`metrics::set_global_recorder()`].
 // We do intentionally omit `#[must_use]` here, as we don't want to force
 // library users using the returned `FreezableRecorder` directly.
-#[allow(clippy::must_use_candidate)]
+#[allow(clippy::must_use_candidate)] // intentional
 pub fn install_freezable() -> FreezableRecorder {
     Recorder::builder().build_freezable_and_install()
 }
