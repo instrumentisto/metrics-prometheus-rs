@@ -178,6 +178,6 @@ jobs:
         with:
           name: ${{ steps.release.outputs.version }}
           body: |
-            [API docs](https://docs.rs/synthez/${{ steps.release.outputs.version }})
+            [API docs](https://docs.rs/metrics-prometheus/${{ steps.release.outputs.version }})
             [Changelog](${{ steps.changelog.outputs.link }})
           prerelease: ${{ contains(steps.release.outputs.version, '-') }}
