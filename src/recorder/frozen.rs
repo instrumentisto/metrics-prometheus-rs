@@ -172,36 +172,36 @@ where
 {
     fn describe_counter(
         &self,
-        name: metrics::KeyName,
+        key: metrics::KeyName,
         _: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
         self.storage.describe::<prometheus::IntCounter>(
-            name.as_str(),
+            key.as_str(),
             description.into_owned(),
         );
     }
 
     fn describe_gauge(
         &self,
-        name: metrics::KeyName,
+        key: metrics::KeyName,
         _: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
         self.storage.describe::<prometheus::Gauge>(
-            name.as_str(),
+            key.as_str(),
             description.into_owned(),
         );
     }
 
     fn describe_histogram(
         &self,
-        name: metrics::KeyName,
+        key: metrics::KeyName,
         _: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
         self.storage.describe::<prometheus::Histogram>(
-            name.as_str(),
+            key.as_str(),
             description.into_owned(),
         );
     }

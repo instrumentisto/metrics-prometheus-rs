@@ -392,36 +392,36 @@ where
 {
     fn describe_counter(
         &self,
-        name: metrics::KeyName,
+        key: metrics::KeyName,
         _: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
         self.storage.describe::<prometheus::IntCounter>(
-            name.as_str(),
+            key.as_str(),
             description.into_owned(),
         );
     }
 
     fn describe_gauge(
         &self,
-        name: metrics::KeyName,
+        key: metrics::KeyName,
         _: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
         self.storage.describe::<prometheus::Gauge>(
-            name.as_str(),
+            key.as_str(),
             description.into_owned(),
         );
     }
 
     fn describe_histogram(
         &self,
-        name: metrics::KeyName,
+        key: metrics::KeyName,
         _: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
         self.storage.describe::<prometheus::Histogram>(
-            name.as_str(),
+            key.as_str(),
             description.into_owned(),
         );
     }
@@ -558,7 +558,7 @@ impl<S, L> Builder<S, L> {
     /// # Ok::<_, prometheus::Error>(())
     /// ```
     // TODO: Anonymous lifetimes in `impl Trait` are unstable.
-    //       Try remove on Rust 1.80 upgrade.
+    //       Try remove on Rust 1.81 upgrade.
     #[allow(single_use_lifetimes)]
     pub fn with_registry<'r>(
         mut self,

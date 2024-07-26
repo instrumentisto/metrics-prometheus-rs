@@ -488,73 +488,73 @@ where
 {
     fn describe_counter(
         &self,
-        name: metrics::KeyName,
+        key: metrics::KeyName,
         unit: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
         if let Some(frozen) = self.frozen.get() {
-            frozen.describe_counter(name, unit, description);
+            frozen.describe_counter(key, unit, description);
         } else {
-            self.usual.describe_counter(name, unit, description);
+            self.usual.describe_counter(key, unit, description);
         }
     }
 
     fn describe_gauge(
         &self,
-        name: metrics::KeyName,
+        key: metrics::KeyName,
         unit: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
         if let Some(frozen) = self.frozen.get() {
-            frozen.describe_gauge(name, unit, description);
+            frozen.describe_gauge(key, unit, description);
         } else {
-            self.usual.describe_gauge(name, unit, description);
+            self.usual.describe_gauge(key, unit, description);
         }
     }
 
     fn describe_histogram(
         &self,
-        name: metrics::KeyName,
+        key: metrics::KeyName,
         unit: Option<metrics::Unit>,
         description: metrics::SharedString,
     ) {
         if let Some(frozen) = self.frozen.get() {
-            frozen.describe_histogram(name, unit, description);
+            frozen.describe_histogram(key, unit, description);
         } else {
-            self.usual.describe_histogram(name, unit, description);
+            self.usual.describe_histogram(key, unit, description);
         }
     }
 
     fn register_counter(
         &self,
         key: &metrics::Key,
-        meta: &metrics::Metadata<'_>,
+        metadata: &metrics::Metadata<'_>,
     ) -> metrics::Counter {
         self.frozen.get().map_or_else(
-            || self.usual.register_counter(key, meta),
-            |frozen| frozen.register_counter(key, meta),
+            || self.usual.register_counter(key, metadata),
+            |frozen| frozen.register_counter(key, metadata),
         )
     }
 
     fn register_gauge(
         &self,
         key: &metrics::Key,
-        meta: &metrics::Metadata<'_>,
+        metadata: &metrics::Metadata<'_>,
     ) -> metrics::Gauge {
         self.frozen.get().map_or_else(
-            || self.usual.register_gauge(key, meta),
-            |frozen| frozen.register_gauge(key, meta),
+            || self.usual.register_gauge(key, metadata),
+            |frozen| frozen.register_gauge(key, metadata),
         )
     }
 
     fn register_histogram(
         &self,
         key: &metrics::Key,
-        meta: &metrics::Metadata<'_>,
+        metadata: &metrics::Metadata<'_>,
     ) -> metrics::Histogram {
         self.frozen.get().map_or_else(
-            || self.usual.register_histogram(key, meta),
-            |frozen| frozen.register_histogram(key, meta),
+            || self.usual.register_histogram(key, metadata),
+            |frozen| frozen.register_histogram(key, metadata),
         )
     }
 }

@@ -45,11 +45,11 @@ impl<M> AsMut<M> for Metric<M> {
 
 #[warn(clippy::missing_trait_methods)]
 impl metrics::CounterFn for Metric<prometheus::IntCounter> {
-    fn increment(&self, val: u64) {
-        self.0.inc_by(val);
+    fn increment(&self, value: u64) {
+        self.0.inc_by(value);
     }
 
-    fn absolute(&self, val: u64) {
+    fn absolute(&self, value: u64) {
         // `prometheus::IntCounter` doesn't provide any atomic way to set its
         // absolute value, so the implementation below may introduce races when
         // two `.absolute()` operations content, leading to the incorrect value
@@ -60,29 +60,29 @@ impl metrics::CounterFn for Metric<prometheus::IntCounter> {
         // TODO: Make a PR to `prometheus` crate allowing setting absolute value
         //       atomically.
         self.0.reset();
-        self.0.inc_by(val);
+        self.0.inc_by(value);
     }
 }
 
 #[warn(clippy::missing_trait_methods)]
 impl metrics::GaugeFn for Metric<prometheus::Gauge> {
-    fn increment(&self, val: f64) {
-        self.0.add(val);
+    fn increment(&self, value: f64) {
+        self.0.add(value);
     }
 
-    fn decrement(&self, val: f64) {
-        self.0.sub(val);
+    fn decrement(&self, value: f64) {
+        self.0.sub(value);
     }
 
-    fn set(&self, val: f64) {
-        self.0.set(val);
+    fn set(&self, value: f64) {
+        self.0.set(value);
     }
 }
 
 #[warn(clippy::missing_trait_methods)]
 impl metrics::HistogramFn for Metric<prometheus::Histogram> {
-    fn record(&self, val: f64) {
-        self.0.observe(val);
+    fn record(&self, value: f64) {
+        self.0.observe(value);
     }
 }
 
@@ -129,15 +129,15 @@ impl<M> metrics::CounterFn for Fallible<M>
 where
     Metric<M>: metrics::CounterFn,
 {
-    fn increment(&self, val: u64) {
+    fn increment(&self, value: u64) {
         if let Ok(m) = &*self.0 {
-            m.increment(val);
+            m.increment(value);
         }
     }
 
-    fn absolute(&self, val: u64) {
+    fn absolute(&self, value: u64) {
         if let Ok(m) = &*self.0 {
-            m.absolute(val);
+            m.absolute(value);
         }
     }
 }
@@ -149,21 +149,21 @@ impl<M> metrics::GaugeFn for Fallible<M>
 where
     Metric<M>: metrics::GaugeFn,
 {
-    fn increment(&self, val: f64) {
+    fn increment(&self, value: f64) {
         if let Ok(m) = &*self.0 {
-            m.increment(val);
+            m.increment(value);
         }
     }
 
-    fn decrement(&self, val: f64) {
+    fn decrement(&self, value: f64) {
         if let Ok(m) = &*self.0 {
-            m.decrement(val);
+            m.decrement(value);
         }
     }
 
-    fn set(&self, val: f64) {
+    fn set(&self, value: f64) {
         if let Ok(m) = &*self.0 {
-            m.set(val);
+            m.set(value);
         }
     }
 }
@@ -175,9 +175,9 @@ impl<M> metrics::HistogramFn for Fallible<M>
 where
     Metric<M>: metrics::HistogramFn,
 {
-    fn record(&self, val: f64) {
+    fn record(&self, value: f64) {
         if let Ok(m) = &*self.0 {
-            m.record(val);
+            m.record(value);
         }
     }
 }
