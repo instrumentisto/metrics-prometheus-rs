@@ -1,9 +1,7 @@
 //! [`metrics::Recorder`] being able to stop registering new metrics in the
 //! benefit of providing fast access to already registered ones.
 
-use std::sync::Arc;
-
-use once_cell::sync::OnceCell;
+use std::sync::{Arc, OnceLock};
 
 use crate::{failure::strategy::PanicInDebugNoOpInRelease, metric, storage};
 
@@ -165,7 +163,7 @@ pub struct Recorder<FailureStrategy = PanicInDebugNoOpInRelease> {
     /// This one is built by draining the [`Recorder::usual`].
     ///
     /// [`FrozenRecorder`]: super::Frozen
-    frozen: Arc<OnceCell<super::Frozen<FailureStrategy>>>,
+    frozen: Arc<OnceLock<super::Frozen<FailureStrategy>>>,
 }
 
 impl Recorder {
