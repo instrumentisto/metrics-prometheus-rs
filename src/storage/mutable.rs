@@ -107,21 +107,17 @@ impl Storage {
     /// [`metrics::Recorder::describe_histogram()`] implementations.
     ///
     /// [`help` description]: prometheus::proto::MetricFamily::get_help
+    #[expect( // intentional
+        clippy::missing_panics_doc,
+        clippy::unwrap_used,
+        reason = "`RwLock` usage is fully panic-safe here"
+    )]
     pub fn describe<M>(&self, name: &str, description: String)
     where
         M: metric::Bundled,
         <M as metric::Bundled>::Bundle: Clone,
         Self: super::Get<Collection<<M as metric::Bundled>::Bundle>>,
     {
-        // PANIC: `RwLock` usage is fully panic-safe here.
-        #![allow( // intentional
-            clippy::missing_panics_doc,
-            clippy::unwrap_in_result,
-            clippy::unwrap_used
-        )]
-        // Intentionally, see the comment below on a `write_storage`.
-        #![allow(clippy::significant_drop_tightening)] // intentional
-
         use super::Get as _;
 
         let read_storage = self.collection().read().unwrap();
@@ -158,6 +154,17 @@ impl Storage {
     ///
     /// [`metrics::Registry`]: metrics_util::registry::Registry
     /// [`metrics::registry::Storage`]: metrics_util::registry::Storage
+    #[expect( // intentional
+        clippy::unwrap_in_result,
+        clippy::unwrap_used,
+        reason = "`RwLock` usage is fully panic-safe here (considering the \
+                  `prometheus::Registry::register()` does not)"
+    )]
+    #[expect( // intentional
+        clippy::significant_drop_tightening,
+        reason = "write lock on `storage` is intentionally held till the end \
+                  of the scope, to perform all the operations atomically"
+    )]
     fn register<'k, M>(
         &self,
         key: &'k metrics::Key,
@@ -171,16 +178,6 @@ impl Storage {
             + 'static,
         Self: super::Get<Collection<<M as metric::Bundled>::Bundle>>,
     {
-        // PANIC: `RwLock` usage is panic-safe here (considering the
-        //        `prometheus::Registry::register()` does not).
-        #![allow( // intentional
-            clippy::missing_panics_doc,
-            clippy::unwrap_in_result,
-            clippy::unwrap_used
-        )]
-        // Intentionally, see the comment below on a `storage`.
-        #![allow(clippy::significant_drop_tightening)] // intentional
-
         use super::Get as _;
         use metric::Bundle as _;
 
@@ -241,6 +238,19 @@ impl Storage {
     /// provided `metric`.
     ///
     /// [`metrics::registry::Storage`]: metrics_util::registry::Storage
+    #[expect( // intentional
+        clippy::missing_panics_doc,
+        clippy::unwrap_in_result,
+        clippy::unwrap_used,
+        reason = "`RwLock` usage is fully panic-safe here (considering the \
+                  `prometheus::Registry::register()` does not)"
+    )]
+    #[expect( // intentional
+        clippy::significant_drop_tightening,
+        reason = "write lock on `storage` is intentionally held till the end \
+                  of the scope, to perform the registration in \
+                  `prometheus::Registry` exclusively"
+    )]
     pub fn register_external<M>(&self, metric: M) -> prometheus::Result<()>
     where
         M: metric::Bundled + prometheus::core::Collector,
@@ -248,16 +258,6 @@ impl Storage {
             prometheus::core::Collector + Clone + 'static,
         Self: super::Get<Collection<<M as metric::Bundled>::Bundle>>,
     {
-        // PANIC: `RwLock` usage is panic-safe here (considering the
-        //        `prometheus::Registry::register()` does not).
-        #![allow(  // intentional
-            clippy::missing_panics_doc,
-            clippy::unwrap_in_result,
-            clippy::unwrap_used
-        )]
-        // Intentionally, see the comment below on a `storage`.
-        #![allow(clippy::significant_drop_tightening)] // intentional
-
         use super::Get as _;
 
         let name = metric

@@ -51,10 +51,13 @@
 #![forbid(non_ascii_idents, unsafe_code)]
 #![warn(
     clippy::absolute_paths,
+    clippy::allow_attributes,
+    clippy::allow_attributes_without_reason,
     clippy::as_conversions,
     clippy::as_ptr_cast_mut,
     clippy::assertions_on_result_states,
     clippy::branches_sharing_code,
+    clippy::cfg_not_test,
     clippy::clear_with_drain,
     clippy::clone_on_ref_ptr,
     clippy::collection_is_never_read,
@@ -125,6 +128,7 @@
     clippy::rest_pat_in_fully_bound_structs,
     clippy::same_name_method,
     clippy::semicolon_inside_block,
+    clippy::set_contains_or_insert,
     clippy::shadow_unrelated,
     clippy::significant_drop_in_scrutinee,
     clippy::significant_drop_tightening,
@@ -236,9 +240,11 @@ pub fn try_install_freezable(
 ///
 /// If the [`Recorder`] fails to be installed with the
 /// [`metrics::set_global_recorder()`].
-// We do intentionally omit `#[must_use]` here, as we don't want to force
-// library users using the returned `Recorder` directly.
-#[allow(clippy::must_use_candidate)] // intentional
+#[expect( // intentional
+    clippy::must_use_candidate,
+    reason = "`#[must_use]` is omitted here, to avoid forcing library users \
+              using the returned `Recorder` directly"
+)]
 pub fn install() -> Recorder {
     Recorder::builder().build_and_install()
 }
@@ -251,9 +257,11 @@ pub fn install() -> Recorder {
 ///
 /// If the [`FreezableRecorder`] fails to be installed with the
 /// [`metrics::set_global_recorder()`].
-// We do intentionally omit `#[must_use]` here, as we don't want to force
-// library users using the returned `FreezableRecorder` directly.
-#[allow(clippy::must_use_candidate)] // intentional
+#[expect( // intentional
+    clippy::must_use_candidate,
+    reason = "`#[must_use]` is omitted here, to avoid forcing library users \
+              using the returned `Recorder` directly"
+)]
 pub fn install_freezable() -> FreezableRecorder {
     Recorder::builder().build_freezable_and_install()
 }

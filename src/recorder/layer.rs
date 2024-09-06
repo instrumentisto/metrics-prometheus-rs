@@ -14,7 +14,7 @@ pub struct Identity;
 impl<R> Layer<R> for Identity {
     type Output = R;
 
-    #[allow(clippy::renamed_function_params)] // impl related
+    #[expect(clippy::renamed_function_params, reason = "impl related")]
     fn layer(&self, itself: R) -> R {
         itself
     }

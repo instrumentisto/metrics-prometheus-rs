@@ -557,9 +557,11 @@ impl<S, L> Builder<S, L> {
     /// );
     /// # Ok::<_, prometheus::Error>(())
     /// ```
-    // TODO: Anonymous lifetimes in `impl Trait` are unstable.
-    //       Try remove on Rust 1.81 upgrade.
-    #[allow(single_use_lifetimes)]
+    // TODO: Try remove on Rust 1.82 upgrade.
+    #[expect( // anonymous lifetimes in `impl Trait` are unstable
+        single_use_lifetimes,
+        reason = "anonymous lifetimes in `impl Trait` are unstable"
+    )]
     pub fn with_registry<'r>(
         mut self,
         registry: impl IntoCow<'r, prometheus::Registry>,

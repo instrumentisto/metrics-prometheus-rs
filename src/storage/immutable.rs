@@ -125,19 +125,22 @@ impl Storage {
     }
 }
 
-// PANIC: `RwLock` usage is fully panic-safe inside, so the `impl` is
-//        infallible, in fact.
-#[allow(clippy::fallible_impl_from)] // intentional
+#[expect( // intentional
+    clippy::fallible_impl_from,
+    reason = "`RwLock` usage is fully panic-safe inside, so the `impl` is \
+              infallible, in fact"
+)]
 impl From<&super::mutable::Storage> for Storage {
     /// Creates a new immutable [`Storage`] by [draining] the referred
     /// [`mutable::Storage`] and leaving it empty.
     ///
     /// [`mutable::Storage`]: super::mutable::Storage
     /// [draining]: HashMap::drain
+    #[expect( // intentional
+        clippy::unwrap_used,
+        reason = "`RwLock` usage is fully panic-safe here"
+    )]
     fn from(mutable: &super::mutable::Storage) -> Self {
-        // PANIC: `RwLock` usage is fully panic-safe here.
-        #![allow(clippy::unwrap_used)] // intentional
-
         Self {
             counters: mutable
                 .counters
