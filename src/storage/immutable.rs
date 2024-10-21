@@ -15,9 +15,10 @@ use super::KeyName;
 pub type Collection<M> = HashMap<KeyName, metric::Describable<M>>;
 
 /// Snapshot of a [`mutable::Storage`], that is not capable of registering
-/// metrics in a [`prometheus::Registry`] on the fly, but still allowing to
-/// change their [`help` description] on the fly, once they were registered in
-/// the [`mutable::Storage`] before snapshot.
+/// metrics in a [`prometheus::Registry`] on the fly.
+///
+/// However, still allows to change metrics [`help` description] on the fly,
+/// once they are registered in a [`mutable::Storage`] before snapshot.
 ///
 /// In comparison with a [`metrics::Registry`], this immutable [`Storage`]
 /// provides much less overhead of accessing an already registered metric (just
