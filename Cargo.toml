@@ -19,7 +19,7 @@ arc-swap = "1.5"
 metrics = { version = "0.23", default-features = false }
 metrics-util = { version = "0.17", features = ["registry"], default-features = false }
 prometheus = { version = "0.13", default-features = false }
-sealed = "0.5"
+sealed = "0.6"
 smallvec = "1.10"
 
 # Not realy used, for surviving MSRV check only.
