@@ -84,6 +84,12 @@ impl metrics::HistogramFn for Metric<prometheus::Histogram> {
     fn record(&self, value: f64) {
         self.0.observe(value);
     }
+
+    fn record_many(&self, value: f64, count: usize) {
+        for _ in 0..count {
+            self.record(value);
+        }
+    }
 }
 
 /// Fallible [`Metric`] stored in [`metrics::Registry`].
@@ -178,6 +184,14 @@ where
     fn record(&self, value: f64) {
         if let Ok(m) = &*self.0 {
             m.record(value);
+        }
+    }
+
+    fn record_many(&self, value: f64, count: usize) {
+        if let Ok(m) = &*self.0 {
+            for _ in 0..count {
+                m.record(value);
+            }
         }
     }
 }

@@ -13,8 +13,11 @@ All user visible changes to this project will be documented in this file. This p
 
 ### BC Breaks
 
-- Bumped up [MSRV] to 1.81 because for `#[expect]` attribute usage. ([todo])
+- Upgraded to 0.24 version of `metrics` crate. ([todo])
+- Upgraded to 0.18 version of `metrics-util` crate. ([todo])
+- Bumped up [MSRV] to 1.81 because for `#[expect]` attribute usage. ([a1192b5d])
 
+[a1192b5d]: /../../commit/a1192b5d1d7d6069b82d10f71d7fc4e0583897c0
 [todo]: /../../commit/todo
 
 
@@ -28,7 +31,7 @@ All user visible changes to this project will be documented in this file. This p
 ### BC Breaks
 
 - Upgraded to 0.23 version of `metrics` crate. ([#11], [#10])
-- Upgraded to 0.13 version of `metrics-util` crate. ([#11], [#10])
+- Upgraded to 0.17 version of `metrics-util` crate. ([#11], [#10])
 - Bumped up [MSRV] to 1.72 because of newer dependencies versions. ([#11], [#10])
 
 [#10]: /../../issues/10

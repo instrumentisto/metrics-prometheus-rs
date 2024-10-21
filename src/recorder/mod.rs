@@ -911,7 +911,7 @@ impl<S, L> Builder<S, L> {
     where
         S: failure::Strategy + Clone,
         L: Layer<Recorder<S>>,
-        <L as Layer<Recorder<S>>>::Output: metrics::Recorder + 'static,
+        <L as Layer<Recorder<S>>>::Output: metrics::Recorder + Sync + 'static,
     {
         let Self { storage, failure_strategy, layers } = self;
         let rec = Recorder {
@@ -986,7 +986,7 @@ impl<S, L> Builder<S, L> {
         S: failure::Strategy + Clone,
         L: Layer<freezable::Recorder<S>>,
         <L as Layer<freezable::Recorder<S>>>::Output:
-            metrics::Recorder + 'static,
+            metrics::Recorder + Sync + 'static,
     {
         let Self { storage, failure_strategy, layers } = self;
         let rec = freezable::Recorder::wrap(Recorder {
@@ -1065,7 +1065,8 @@ impl<S, L> Builder<S, L> {
     where
         S: failure::Strategy + Clone,
         L: Layer<frozen::Recorder<S>>,
-        <L as Layer<frozen::Recorder<S>>>::Output: metrics::Recorder + 'static,
+        <L as Layer<frozen::Recorder<S>>>::Output:
+            metrics::Recorder + Sync + 'static,
     {
         let Self { storage, failure_strategy, layers } = self;
         let rec =
@@ -1139,7 +1140,7 @@ impl<S, L> Builder<S, L> {
     where
         S: failure::Strategy + Clone,
         L: Layer<Recorder<S>>,
-        <L as Layer<Recorder<S>>>::Output: metrics::Recorder + 'static,
+        <L as Layer<Recorder<S>>>::Output: metrics::Recorder + Sync + 'static,
     {
         self.try_build_and_install().unwrap_or_else(|e| {
             panic!(
@@ -1203,7 +1204,7 @@ impl<S, L> Builder<S, L> {
         S: failure::Strategy + Clone,
         L: Layer<freezable::Recorder<S>>,
         <L as Layer<freezable::Recorder<S>>>::Output:
-            metrics::Recorder + 'static,
+            metrics::Recorder + Sync + 'static,
     {
         self.try_build_freezable_and_install().unwrap_or_else(|e| {
             panic!(
@@ -1271,7 +1272,8 @@ impl<S, L> Builder<S, L> {
     where
         S: failure::Strategy + Clone,
         L: Layer<frozen::Recorder<S>>,
-        <L as Layer<frozen::Recorder<S>>>::Output: metrics::Recorder + 'static,
+        <L as Layer<frozen::Recorder<S>>>::Output:
+            metrics::Recorder + Sync + 'static,
     {
         self.try_build_frozen_and_install().unwrap_or_else(|e| {
             panic!(
