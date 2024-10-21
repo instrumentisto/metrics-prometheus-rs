@@ -6,19 +6,19 @@ All user visible changes to this project will be documented in this file. This p
 
 
 
-## [0.8.0] · 2024-??-?? (unreleased)
+## [0.8.0] · 2024-10-21
 [0.8.0]: /../../tree/v0.8.0
 
 [Diff](/../../compare/v0.7.0...v0.8.0)
 
 ### BC Breaks
 
-- Upgraded to 0.24 version of `metrics` crate. ([todo])
-- Upgraded to 0.18 version of `metrics-util` crate. ([todo])
+- Upgraded to 0.24 version of `metrics` crate. ([7398888c])
+- Upgraded to 0.18 version of `metrics-util` crate. ([7398888c])
 - Bumped up [MSRV] to 1.81 because for `#[expect]` attribute usage. ([a1192b5d])
 
+[7398888c]: /../../commit/7398888ce269abe305c4cd578df8cc17e81e4d61
 [a1192b5d]: /../../commit/a1192b5d1d7d6069b82d10f71d7fc4e0583897c0
-[todo]: /../../commit/todo
 
 
 
