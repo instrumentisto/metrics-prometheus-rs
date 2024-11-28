@@ -557,7 +557,7 @@ impl<S, L> Builder<S, L> {
     /// );
     /// # Ok::<_, prometheus::Error>(())
     /// ```
-    // TODO: Try remove on Rust 1.83 upgrade.
+    // TODO: Try remove on Rust 1.84 upgrade.
     #[expect( // anonymous lifetimes in `impl Trait` are unstable
         single_use_lifetimes,
         reason = "anonymous lifetimes in `impl Trait` are unstable"
