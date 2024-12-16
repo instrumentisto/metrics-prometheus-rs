@@ -24,7 +24,7 @@ smallvec = "1.10"
 
 # Not realy used, for surviving MSRV check only.
 # TODO: Fix in `prometheus` crate.
-thiserror = "1.0.2"
+thiserror = "2.0.7"
 
 [dev-dependencies]
 metrics-util = { version = "0.18", features = ["layer-filter"], default-features = false }
