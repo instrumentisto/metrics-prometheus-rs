@@ -3,7 +3,7 @@ updates:
   - package-ecosystem: cargo
     directory: /
     schedule:
-      interval: daily
+      interval: weakly
 
   - package-ecosystem: github-actions
     directory: /
