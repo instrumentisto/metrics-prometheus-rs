@@ -6,10 +6,10 @@ All user visible changes to this project will be documented in this file. This p
 
 
 
-## [main] · unreleased
-[main]: /../../tree/main
+## [0.9.0] · 2025-01-07
+[0.9.0]: /../../tree/v0.9.0
 
-[Diff](/../../compare/v0.8.0...main)
+[Diff](/../../compare/v0.8.0...v0.9.0)
 
 ### BC Breaks
 
