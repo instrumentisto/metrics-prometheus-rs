@@ -2,12 +2,11 @@
 
 use std::sync::Arc;
 
+use super::Builder;
 use crate::{
     failure::{self, strategy::PanicInDebugNoOpInRelease},
     storage,
 };
-
-use super::Builder;
 
 /// [`metrics::Recorder`] allowing to access already registered metrics in a
 /// [`prometheus::Registry`], but not to register new ones, and is built on top

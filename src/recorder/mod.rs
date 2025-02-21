@@ -6,14 +6,13 @@ pub mod layer;
 
 use std::{borrow::Cow, fmt, sync::Arc};
 
+pub use metrics_util::layers::Layer;
+
+pub use self::{freezable::Recorder as Freezable, frozen::Recorder as Frozen};
 use crate::{
     failure::{self, strategy::PanicInDebugNoOpInRelease},
     metric, storage,
 };
-
-pub use metrics_util::layers::Layer;
-
-pub use self::{freezable::Recorder as Freezable, frozen::Recorder as Frozen};
 
 /// [`metrics::Recorder`] registering metrics in a [`prometheus::Registry`] and
 /// powered by a [`metrics::Registry`] built on top of a [`storage::Mutable`].
@@ -294,8 +293,8 @@ impl<S> Recorder<S> {
         <M as metric::Bundled>::Bundle:
             prometheus::core::Collector + Clone + 'static,
         storage::Mutable: storage::Get<
-            storage::mutable::Collection<<M as metric::Bundled>::Bundle>,
-        >,
+                storage::mutable::Collection<<M as metric::Bundled>::Bundle>,
+            >,
     {
         self.storage.register_external(metric)
     }
@@ -376,8 +375,8 @@ impl<S> Recorder<S> {
         <M as metric::Bundled>::Bundle:
             prometheus::core::Collector + Clone + 'static,
         storage::Mutable: storage::Get<
-            storage::mutable::Collection<<M as metric::Bundled>::Bundle>,
-        >,
+                storage::mutable::Collection<<M as metric::Bundled>::Bundle>,
+            >,
     {
         self.try_register_metric(metric).unwrap_or_else(|e| {
             panic!("failed to register `prometheus` metric: {e}")
@@ -557,7 +556,7 @@ impl<S, L> Builder<S, L> {
     /// );
     /// # Ok::<_, prometheus::Error>(())
     /// ```
-    // TODO: Try remove on Rust 1.84 upgrade.
+    // TODO: Try remove on Rust 1.86 upgrade.
     #[expect( // anonymous lifetimes in `impl Trait` are unstable
         single_use_lifetimes,
         reason = "anonymous lifetimes in `impl Trait` are unstable"
@@ -669,8 +668,8 @@ impl<S, L> Builder<S, L> {
         <M as metric::Bundled>::Bundle:
             prometheus::core::Collector + Clone + 'static,
         storage::Mutable: storage::Get<
-            storage::mutable::Collection<<M as metric::Bundled>::Bundle>,
-        >,
+                storage::mutable::Collection<<M as metric::Bundled>::Bundle>,
+            >,
     {
         self.storage.register_external(metric)?;
         Ok(self)
@@ -734,8 +733,8 @@ impl<S, L> Builder<S, L> {
         <M as metric::Bundled>::Bundle:
             prometheus::core::Collector + Clone + 'static,
         storage::Mutable: storage::Get<
-            storage::mutable::Collection<<M as metric::Bundled>::Bundle>,
-        >,
+                storage::mutable::Collection<<M as metric::Bundled>::Bundle>,
+            >,
     {
         self.try_with_metric(metric).unwrap_or_else(|e| {
             panic!("failed to register `prometheus` metric: {e}")

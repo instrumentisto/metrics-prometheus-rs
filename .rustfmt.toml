@@ -5,9 +5,10 @@
 max_width = 80
 use_small_heuristics = "Max"
 
-format_strings = false
+group_imports = "StdExternalCrate"
 imports_granularity = "Crate"
 
+format_strings = false
 format_code_in_doc_comments = true
 format_macro_matchers = true
 use_try_shorthand = true

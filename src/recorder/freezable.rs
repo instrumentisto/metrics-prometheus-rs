@@ -3,9 +3,8 @@
 
 use std::sync::{Arc, OnceLock};
 
-use crate::{failure::strategy::PanicInDebugNoOpInRelease, metric, storage};
-
 use super::Builder;
+use crate::{failure::strategy::PanicInDebugNoOpInRelease, metric, storage};
 
 /// [`metrics::Recorder`] being essential a usual [`Recorder`], which is able to
 /// become a [`Frozen`] one at some point after creation.
@@ -301,8 +300,8 @@ impl<S> Recorder<S> {
         <M as metric::Bundled>::Bundle:
             prometheus::core::Collector + Clone + 'static,
         storage::Mutable: storage::Get<
-            storage::mutable::Collection<<M as metric::Bundled>::Bundle>,
-        >,
+                storage::mutable::Collection<<M as metric::Bundled>::Bundle>,
+            >,
     {
         if self.frozen.get().is_none() {
             self.usual.try_register_metric(metric)?;
@@ -395,8 +394,8 @@ impl<S> Recorder<S> {
         <M as metric::Bundled>::Bundle:
             prometheus::core::Collector + Clone + 'static,
         storage::Mutable: storage::Get<
-            storage::mutable::Collection<<M as metric::Bundled>::Bundle>,
-        >,
+                storage::mutable::Collection<<M as metric::Bundled>::Bundle>,
+            >,
     {
         if self.frozen.get().is_none() {
             self.usual.register_metric(metric);

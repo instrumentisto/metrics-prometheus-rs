@@ -6,6 +6,19 @@ All user visible changes to this project will be documented in this file. This p
 
 
 
+## main
+
+[Diff](/../../compare/v0.9.0...main)
+
+### BC Breaks
+
+- Bumped up [MSRV] to 1.85 because of migration to 2024 edition. ([todo])
+
+[todo]: /../../commit/todo
+
+
+
+
 ## [0.9.0] · 2025-01-07
 [0.9.0]: /../../tree/v0.9.0
 

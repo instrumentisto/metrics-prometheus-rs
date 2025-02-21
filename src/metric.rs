@@ -7,10 +7,9 @@ use arc_swap::ArcSwap;
 use sealed::sealed;
 use smallvec::SmallVec;
 
-use self::bundle::Either;
-
 #[doc(inline)]
 pub use self::bundle::Bundle;
+use self::bundle::Either;
 
 /// Wrapper allowing implementing [`metrics::CounterFn`], [`metrics::GaugeFn`]
 /// and [`metrics::HistogramFn`] for [`prometheus`] metrics.
