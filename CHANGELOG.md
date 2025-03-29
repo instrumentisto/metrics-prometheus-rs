@@ -13,7 +13,9 @@ All user visible changes to this project will be documented in this file. This p
 ### BC Breaks
 
 - Bumped up [MSRV] to 1.85 because of migration to 2024 edition. ([todo])
+- Upgraded to 0.14 version of `prometheus` crate. ([#14])
 
+[#14]: https://github.com/instrumentisto/metrics-prometheus-rs/pull/14
 [todo]: /../../commit/todo
 
 

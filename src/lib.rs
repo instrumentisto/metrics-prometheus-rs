@@ -190,10 +190,6 @@ pub mod metric;
 pub mod recorder;
 pub mod storage;
 
-// For surviving MSRV check only.
-// TODO: Fix in `prometheus` crate.
-use thiserror as _;
-
 #[doc(inline)]
 pub use self::{
     metric::Metric,
