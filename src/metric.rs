@@ -429,7 +429,7 @@ impl TryFrom<&metrics::Key> for PrometheusHistogram {
 
 /// Definitions of [`Bundle`] machinery.
 pub mod bundle {
-    use std::collections::HashMap;
+    use std::{collections::HashMap, hash::BuildHasher};
 
     use sealed::sealed;
 
@@ -494,9 +494,9 @@ pub mod bundle {
         ///
         /// [`prometheus::Metric`]: prometheus::core::Metric
         /// [0]: prometheus::core::MetricVec::get_metric_with()
-        fn get_metric_with(
+        fn get_metric_with<S: BuildHasher>(
             &self,
-            labels: &HashMap<&str, &str>,
+            labels: &HashMap<&str, &str, S>,
         ) -> prometheus::Result<Self::Metric>;
     }
 
@@ -508,9 +508,9 @@ pub mod bundle {
     {
         type Metric = M;
 
-        fn get_metric_with(
+        fn get_metric_with<S: BuildHasher>(
             &self,
-            labels: &HashMap<&str, &str>,
+            labels: &HashMap<&str, &str, S>,
         ) -> prometheus::Result<M> {
             self.get_metric_with(labels)
         }
@@ -525,13 +525,13 @@ pub mod bundle {
     /// [`prometheus::MetricVec`]: prometheus::core::MetricVec
     #[sealed]
     pub trait Bundle {
-        /// Type of a single [`prometheus::Metric`] that may be stored in this
+        /// Type of single [`prometheus::Metric`] that may be stored in this
         /// [`Bundle`].
         ///
         /// [`prometheus::Metric`]: prometheus::core::Metric
         type Single: prometheus::core::Metric;
 
-        /// Type of a [`prometheus::MetricVec`] that may be stored in this
+        /// Type of [`prometheus::MetricVec`] that may be stored in this
         /// [`Bundle`].
         ///
         /// [`prometheus::MetricVec`]: prometheus::core::MetricVec
@@ -578,8 +578,12 @@ pub mod bundle {
                     Ok(c.clone())
                 }
                 Self::Vec(v) => {
-                    let labels =
-                        key.labels().map(|l| (l.key(), l.value())).collect();
+                    // TODO: Experiment with more rapid hash? See:
+                    //       https://github.com/tikv/rust-prometheus/pull/532
+                    let labels = key
+                        .labels()
+                        .map(|l| (l.key(), l.value()))
+                        .collect::<HashMap<_, _>>();
                     v.get_metric_with(&labels)
                 }
             }
