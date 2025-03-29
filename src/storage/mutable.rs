@@ -9,9 +9,8 @@ use std::{
 
 use sealed::sealed;
 
-use crate::{metric, Metric};
-
 use super::KeyName;
+use crate::{Metric, metric};
 
 /// Thread-safe [`HashMap`] a [`Collection`] is built upon.
 // TODO: Remove `Arc` here by implementing `metrics_util::registry::Storage` for
@@ -120,13 +119,12 @@ impl Storage {
     {
         use super::Get as _;
 
-        let read_storage = self.collection().read().unwrap();
-        if let Some(metric) = read_storage.get(name) {
+        // NOTE: `read()` lock is `Drop`ed before `else` block.
+        if let Some(metric) = self.collection().read().unwrap().get(name) {
             metric.description.store(Arc::new(description));
         } else {
-            drop(read_storage);
-            // We do intentionally hold here the `write_storage` lock till
-            // the end of the scope, to perform all the operations atomically.
+            // We do intentionally hold here the `write()` lock till the end of
+            // the scope, to perform all the operations atomically.
             let mut write_storage = self.collection().write().unwrap();
 
             if let Some(metric) = write_storage.get(name) {
@@ -178,27 +176,33 @@ impl Storage {
             + 'static,
         Self: super::Get<Collection<<M as metric::Bundled>::Bundle>>,
     {
-        use super::Get as _;
         use metric::Bundle as _;
+
+        use super::Get as _;
 
         let name = key.name();
 
-        let mut bundle_opt = self
+        #[expect( // false positive
+            clippy::significant_drop_in_scrutinee,
+            reason = "false positive"
+        )]
+        // NOTE: `read()` lock is `Drop`ed before `else` block.
+        let bundle = if let Some(bundle) = self
             .collection()
             .read()
             .unwrap()
             .get(name)
-            .and_then(|m| m.metric.clone());
-
-        let bundle = if let Some(bundle) = bundle_opt {
+            .and_then(|m| m.metric.clone())
+        {
             bundle
         } else {
-            // We do intentionally hold here the write lock on `storage` till
-            // the end of the scope, to perform all the operations atomically.
+            // We do intentionally hold here the `write()` lock till the end of
+            // the scope, to perform all the operations atomically.
             let mut storage = self.collection().write().unwrap();
 
-            bundle_opt = storage.get(name).and_then(|m| m.metric.clone());
-            if let Some(bundle) = bundle_opt {
+            if let Some(bundle) =
+                storage.get(name).and_then(|m| m.metric.clone())
+            {
                 bundle
             } else {
                 let bundle: <M as metric::Bundled>::Bundle = key.try_into()?;

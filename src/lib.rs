@@ -31,7 +31,8 @@
 //! [`prometheus::Registry`]: prometheus::Registry
 //! [`read`-lock]: std::sync::RwLock::read()
 //! [`Recorder`]: Recorder
-#![doc = include_str!("../README.md")]
+#![cfg_attr(any(doc, test), doc = include_str!("../README.md"))]
+#![cfg_attr(not(any(doc, test)), doc = env!("CARGO_PKG_NAME"))]
 #![doc(
     html_logo_url = "https://raw.githubusercontent.com/instrumentisto\
                      /metrics-prometheus-rs\
@@ -40,20 +41,14 @@
                         /metrics-prometheus-rs\
                         /80bcffc2096f9ff213ec84833a9d8dd81a115cd5/logo.png"
 )]
-#![deny(
-    macro_use_extern_crate,
-    nonstandard_style,
-    rust_2018_idioms,
-    rustdoc::all,
-    trivial_casts,
-    trivial_numeric_casts
-)]
+#![deny(nonstandard_style, rustdoc::all, trivial_casts, trivial_numeric_casts)]
 #![forbid(non_ascii_idents, unsafe_code)]
 #![warn(
     clippy::absolute_paths,
     clippy::allow_attributes,
     clippy::allow_attributes_without_reason,
     clippy::as_conversions,
+    clippy::as_pointer_underscore,
     clippy::as_ptr_cast_mut,
     clippy::assertions_on_result_states,
     clippy::branches_sharing_code,
@@ -67,6 +62,7 @@
     clippy::decimal_literal_representation,
     clippy::default_union_representation,
     clippy::derive_partial_eq_without_eq,
+    clippy::doc_include_without_cfg,
     clippy::else_if_without_else,
     clippy::empty_drop,
     clippy::empty_structs_with_brackets,
@@ -90,13 +86,16 @@
     clippy::large_include_file,
     clippy::large_stack_frames,
     clippy::let_underscore_untyped,
+    clippy::literal_string_with_formatting_args,
     clippy::lossy_float_literal,
     clippy::map_err_ignore,
+    clippy::map_with_unused_argument_over_ranges,
     clippy::mem_forget,
     clippy::missing_assert_message,
     clippy::missing_asserts_for_indexing,
     clippy::missing_const_for_fn,
     clippy::missing_docs_in_private_items,
+    clippy::module_name_repetitions,
     clippy::multiple_inherent_impl,
     clippy::multiple_unsafe_ops_per_block,
     clippy::mutex_atomic,
@@ -164,29 +163,25 @@
     clippy::verbose_file_reads,
     clippy::while_float,
     clippy::wildcard_enum_match_arm,
-    explicit_outlives_requirements,
+    ambiguous_negative_literals,
+    closure_returning_async_block,
     future_incompatible,
+    impl_trait_redundant_captures,
     let_underscore_drop,
+    macro_use_extern_crate,
     meta_variable_misuse,
     missing_abi,
     missing_copy_implementations,
     missing_debug_implementations,
     missing_docs,
     redundant_lifetimes,
-    semicolon_in_expressions_from_macros,
+    rust_2018_idioms,
     single_use_lifetimes,
     unit_bindings,
     unnameable_types,
     unreachable_pub,
-    unsafe_op_in_unsafe_fn,
     unstable_features,
-    unused_crate_dependencies,
-    unused_extern_crates,
-    unused_import_braces,
-    unused_lifetimes,
-    unused_macro_rules,
-    unused_qualifications,
-    unused_results,
+    unused,
     variant_size_differences
 )]
 
@@ -227,8 +222,8 @@ pub fn try_install() -> Result<Recorder, metrics::SetRecorderError<Recorder>> {
 ///
 /// If the [`FreezableRecorder`] fails to be installed with the
 /// [`metrics::set_global_recorder()`].
-pub fn try_install_freezable(
-) -> Result<FreezableRecorder, metrics::SetRecorderError<FreezableRecorder>> {
+pub fn try_install_freezable()
+-> Result<FreezableRecorder, metrics::SetRecorderError<FreezableRecorder>> {
     Recorder::builder().try_build_freezable_and_install()
 }
 

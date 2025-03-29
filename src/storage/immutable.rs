@@ -4,9 +4,8 @@ use std::{collections::HashMap, sync::Arc};
 
 use sealed::sealed;
 
-use crate::{metric, Metric};
-
 use super::KeyName;
+use crate::{Metric, metric};
 
 /// Collection of [`Describable`] [`metric::Bundle`]s, stored in an immutable
 /// [`Storage`].
@@ -117,8 +116,9 @@ impl Storage {
         <M as metric::Bundled>::Bundle: metric::Bundle<Single = M>,
         Self: super::Get<Collection<<M as metric::Bundled>::Bundle>>,
     {
-        use super::Get as _;
         use metric::Bundle as _;
+
+        use super::Get as _;
 
         self.collection().get(key.name()).map(|bundle| {
             bundle.metric.get_single_metric(key).map(Metric::wrap)

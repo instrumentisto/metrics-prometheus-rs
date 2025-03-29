@@ -8,13 +8,29 @@ All user visible changes to this project will be documented in this file. This p
 
 ## main
 
-[Diff](/../../compare/v0.8.0...main)
+[Diff](/../../compare/v0.9.0...main)
 
 ### BC Breaks
 
+- Bumped up [MSRV] to 1.85 because of migration to 2024 edition. ([todo])
 - Upgraded to 0.14 version of `prometheus` crate. ([#14])
 
 [#14]: https://github.com/instrumentisto/metrics-prometheus-rs/pull/14
+[todo]: /../../commit/todo
+
+
+
+
+## [0.9.0] · 2025-01-07
+[0.9.0]: /../../tree/v0.9.0
+
+[Diff](/../../compare/v0.8.0...v0.9.0)
+
+### BC Breaks
+
+- Upgraded to 0.19 version of `metrics-util` crate. ([#15])
+
+[#15]: /../../pull/15
 
 
 
