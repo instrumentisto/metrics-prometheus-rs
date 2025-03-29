@@ -6,6 +6,19 @@ All user visible changes to this project will be documented in this file. This p
 
 
 
+## main
+
+[Diff](/../../compare/v0.8.0...main)
+
+### BC Breaks
+
+- Upgraded to 0.14 version of `prometheus` crate. ([#14])
+
+[#14]: https://github.com/instrumentisto/metrics-prometheus-rs/pull/14
+
+
+
+
 ## [0.8.0] · 2024-10-21
 [0.8.0]: /../../tree/v0.8.0
 

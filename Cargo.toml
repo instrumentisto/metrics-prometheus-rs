@@ -18,13 +18,9 @@ include = ["/src/", "/CHANGELOG.md", "/LICENSE-APACHE", "/LICENSE-MIT", "/README
 arc-swap = "1.5"
 metrics = { version = "0.24", default-features = false }
 metrics-util = { version = "0.18", features = ["registry"], default-features = false }
-prometheus = { version = "0.13", default-features = false }
+prometheus = { version = "0.14", default-features = false }
 sealed = "0.6"
 smallvec = "1.10"
-
-# Not realy used, for surviving MSRV check only.
-# TODO: Fix in `prometheus` crate.
-thiserror = "2.0.7"
 
 [dev-dependencies]
 metrics-util = { version = "0.18", features = ["layer-filter"], default-features = false }
