@@ -88,7 +88,7 @@ impl Storage {
 
         if let Some(bundle) = self.collection().get(name) {
             bundle.description.store(Arc::new(description));
-        };
+        }
     }
 
     /// Returns a [`prometheus`] `M`etric stored in this immutable [`Storage`]
