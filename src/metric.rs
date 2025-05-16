@@ -122,7 +122,6 @@ impl<M> Fallible<M> {
     /// # Errors
     ///
     /// If this [`Fallible`] contains a [`prometheus::Error`].
-    #[expect(clippy::missing_const_for_fn, reason = "non-const deref coercion")]
     pub fn as_ref(&self) -> Result<&Arc<Metric<M>>, &prometheus::Error> {
         (*self.0).as_ref()
     }

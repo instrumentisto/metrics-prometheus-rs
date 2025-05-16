@@ -8,6 +8,8 @@ absolute-paths-allowed-crates = [
     "prometheus",
 ]
 
+allow-expect-in-tests = true
+
 standard-macro-braces = [
     { name = "assert", brace = "(" },
     { name = "assert_eq", brace = "(" },
