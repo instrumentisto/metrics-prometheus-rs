@@ -10,7 +10,7 @@
 [![Rust docs](https://docs.rs/metrics-prometheus/badge.svg "Rust docs")](https://docs.rs/metrics-prometheus)
 
 [API Docs](https://docs.rs/metrics-prometheus) |
-[Changelog](https://github.com/instrumentisto/metrics-prometheus-rs/blob/main/CHANGELOG.md)
+[Changelog](https://github.com/instrumentisto/metrics-prometheus-rs/blob/v0.11.0/CHANGELOG.md)
 
 [`prometheus`] backend for [`metrics`] crate.
 
@@ -179,7 +179,7 @@ Since [`prometheus`] crate validates the metrics format very strictly, not every
 - Any metric registered in a [`prometheus::Registry`] directly, without using [`metrics`] or this crate interfaces, is not usable via [`metrics`] facade and will cause a [`prometheus::Error`].
   ```rust,should_panic
   metrics_prometheus::install();
-  
+
   prometheus::default_registry()
       .register(Box::new(prometheus::Gauge::new("value", "help")?))?;
 
@@ -267,5 +267,5 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 [Rust]: https://www.rust-lang.org
 [VictoriaMetrics]: https://victoriametrics.com
 
-[APACHE]: https://github.com/instrumentisto/metrics-prometheus-rs/blob/main/LICENSE-APACHE
-[MIT]: https://github.com/instrumentisto/metrics-prometheus-rs/blob/main/LICENSE-MIT
+[APACHE]: https://github.com/instrumentisto/metrics-prometheus-rs/blob/v0.11.0/LICENSE-APACHE
+[MIT]: https://github.com/instrumentisto/metrics-prometheus-rs/blob/v0.11.0/LICENSE-MIT

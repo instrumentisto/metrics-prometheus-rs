@@ -6,9 +6,10 @@ All user visible changes to this project will be documented in this file. This p
 
 
 
-## main
+## [0.11.0] · 2025-03-29
+[0.11.0]: https://github.com/instrumentisto/metrics-prometheus-rs/tree/v0.11.0
 
-[Diff](https://github.com/instrumentisto/metrics-prometheus-rs/compare/v0.10.0...main)
+[Diff](https://github.com/instrumentisto/metrics-prometheus-rs/compare/v0.10.0...v0.11.0)
 
 ### BC Breaks
 
