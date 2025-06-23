@@ -6,6 +6,19 @@ All user visible changes to this project will be documented in this file. This p
 
 
 
+## main
+
+[Diff](https://github.com/instrumentisto/metrics-prometheus-rs/compare/v0.10.0...main)
+
+### BC Breaks
+
+- Upgraded to 0.20 version of `metrics-util` crate. ([#16])
+
+[#16]: https://github.com/instrumentisto/metrics-prometheus-rs/pull/16
+
+
+
+
 ## [0.10.0] · 2025-03-29
 [0.10.0]: https://github.com/instrumentisto/metrics-prometheus-rs/tree/v0.10.0
 
