@@ -466,6 +466,7 @@ impl<S> Recorder<S> {
     /// [`FrozenRecorder`]: super::Frozen
     /// [`HashMap`]: std::collections::HashMap
     /// [`.freeze()`]: Recorder::freeze()
+    /// [`read`-lock]: std::sync::RwLock::read
     pub fn freeze(&self)
     where
         S: Clone,
