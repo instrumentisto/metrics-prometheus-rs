@@ -23,7 +23,7 @@ impl<M> Metric<M> {
         Self(metric)
     }
 
-    /// Unwraps this [`Metric`] returning its inner [`prometheus`] metric
+    /// Unwraps this [`Metric`] returning its inner [`prometheus`] metric.
     #[must_use]
     pub fn into_inner(self) -> M {
         self.0
