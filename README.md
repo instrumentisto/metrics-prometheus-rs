@@ -1,4 +1,4 @@
-<img align="right" width="200" src="https://raw.githubusercontent.com/instrumentisto/metrics-prometheus-rs/80bcffc2096f9ff213ec84833a9d8dd81a115cd5/logo.png">
+<img align="right" width="200" src="https://raw.githubusercontent.com/tyranron/metrics-prometheus-rs/80bcffc2096f9ff213ec84833a9d8dd81a115cd5/logo.png">
 
 [`metrics`] + [`prometheus`] = ❤️
 =================================
@@ -6,11 +6,11 @@
 [![crates.io](https://img.shields.io/crates/v/metrics-prometheus.svg "crates.io")](https://crates.io/crates/metrics-prometheus)
 [![Rust 1.85+](https://img.shields.io/badge/rustc-1.85+-lightgray.svg "Rust 1.85+")](https://blog.rust-lang.org/2025/02/20/Rust-1.85.0.html)
 [![Unsafe Forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg "Unsafe forbidden")](https://github.com/rust-secure-code/safety-dance)\
-[![CI](https://github.com/instrumentisto/metrics-prometheus-rs/actions/workflows/ci.yml/badge.svg?branch=main "CI")](https://github.com/instrumentisto/metrics-prometheus-rs/actions?query=workflow%3ACI+branch%3Amain)
+[![CI](https://github.com/tyranron/metrics-prometheus-rs/actions/workflows/ci.yml/badge.svg?branch=main "CI")](https://github.com/tyranron/metrics-prometheus-rs/actions?query=workflow%3ACI+branch%3Amain)
 [![Rust docs](https://docs.rs/metrics-prometheus/badge.svg "Rust docs")](https://docs.rs/metrics-prometheus)
 
-[API Docs](https://docs.rs/metrics-prometheus) |
-[Changelog](https://github.com/instrumentisto/metrics-prometheus-rs/blob/v0.11.0/CHANGELOG.md)
+[API Docs](https://docs.rs/metrics-prometheus/0.11.0) |
+[Changelog](https://github.com/tyranron/metrics-prometheus-rs/blob/v0.11.0/CHANGELOG.md)
 
 [`prometheus`] backend for [`metrics`] crate.
 
@@ -220,6 +220,7 @@ or provide your own one by implementing the [`failure::Strategy`] trait.
 ## License
 
 Copyright © 2022-2026 Instrumentisto Team, <https://github.com/instrumentisto>
+Copyright © 2026 Kai Ren, <https://github.com/tyranron>
 
 Licensed under either of [Apache License, Version 2.0][APACHE] or [MIT license][MIT] at your option.
 
@@ -267,5 +268,5 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 [Rust]: https://www.rust-lang.org
 [VictoriaMetrics]: https://victoriametrics.com
 
-[APACHE]: https://github.com/instrumentisto/metrics-prometheus-rs/blob/v0.11.0/LICENSE-APACHE
-[MIT]: https://github.com/instrumentisto/metrics-prometheus-rs/blob/v0.11.0/LICENSE-MIT
+[APACHE]: https://github.com/tyranron/metrics-prometheus-rs/blob/v0.11.0/LICENSE-APACHE
+[MIT]: https://github.com/tyranron/metrics-prometheus-rs/blob/v0.11.0/LICENSE-MIT

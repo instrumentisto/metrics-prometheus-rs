@@ -34,10 +34,10 @@
 #![cfg_attr(any(doc, test), doc = include_str!("../README.md"))]
 #![cfg_attr(not(any(doc, test)), doc = env!("CARGO_PKG_NAME"))]
 #![doc(
-    html_logo_url = "https://raw.githubusercontent.com/instrumentisto\
+    html_logo_url = "https://raw.githubusercontent.com/tyranron\
                      /metrics-prometheus-rs\
                      /80bcffc2096f9ff213ec84833a9d8dd81a115cd5/logo.png",
-    html_favicon_url = "https://raw.githubusercontent.com/instrumentisto\
+    html_favicon_url = "https://raw.githubusercontent.com/tyranron\
                         /metrics-prometheus-rs\
                         /80bcffc2096f9ff213ec84833a9d8dd81a115cd5/logo.png"
 )]
