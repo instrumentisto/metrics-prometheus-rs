@@ -6,6 +6,20 @@ All user visible changes to this project will be documented in this file. This p
 
 
 
+## [0.11.1] · 2026-04-23
+[0.11.1]: https://github.com/tyranron/metrics-prometheus-rs/tree/v0.11.1
+
+[Diff](https://github.com/tyranron/metrics-prometheus-rs/compare/v0.11.0...v0.11.1)
+
+### Changed
+
+- Crate's ownership. ([88c01aeb])
+
+[88c01aeb]: https://github.com/tyranron/metrics-prometheus-rs/commit/88c01aeb325ebb6aea2786a4ebc06bb5962983ef
+
+
+
+
 ## [0.11.0] · 2025-06-23
 [0.11.0]: https://github.com/tyranron/metrics-prometheus-rs/tree/v0.11.0
 

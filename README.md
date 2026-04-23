@@ -9,8 +9,8 @@
 [![CI](https://github.com/tyranron/metrics-prometheus-rs/actions/workflows/ci.yml/badge.svg?branch=main "CI")](https://github.com/tyranron/metrics-prometheus-rs/actions?query=workflow%3ACI+branch%3Amain)
 [![Rust docs](https://docs.rs/metrics-prometheus/badge.svg "Rust docs")](https://docs.rs/metrics-prometheus)
 
-[API Docs](https://docs.rs/metrics-prometheus/0.11.0) |
-[Changelog](https://github.com/tyranron/metrics-prometheus-rs/blob/v0.11.0/CHANGELOG.md)
+[API Docs](https://docs.rs/metrics-prometheus/0.11.1) |
+[Changelog](https://github.com/tyranron/metrics-prometheus-rs/blob/v0.11.1/CHANGELOG.md)
 
 [`prometheus`] backend for [`metrics`] crate.
 
@@ -268,5 +268,5 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 [Rust]: https://www.rust-lang.org
 [VictoriaMetrics]: https://victoriametrics.com
 
-[APACHE]: https://github.com/tyranron/metrics-prometheus-rs/blob/v0.11.0/LICENSE-APACHE
-[MIT]: https://github.com/tyranron/metrics-prometheus-rs/blob/v0.11.0/LICENSE-MIT
+[APACHE]: https://github.com/tyranron/metrics-prometheus-rs/blob/v0.11.1/LICENSE-APACHE
+[MIT]: https://github.com/tyranron/metrics-prometheus-rs/blob/v0.11.1/LICENSE-MIT
